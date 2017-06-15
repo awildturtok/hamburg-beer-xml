@@ -1,12 +1,16 @@
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
+.DS_Store
+node_modules/
+dist/
+npm-debug.log
 
-# Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
-!/.mvn/wrapper/maven-wrapper.jar
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+
+composer.phar
+vendor/
+/databases/
+/jobs/
+/mmseqs/
+config-cache.json
