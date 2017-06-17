@@ -1,7 +1,6 @@
 {
-  "name": "mmseqs",
-  "description": "MMseqs Search Service",
-  "author": "Milot Mirdita <milot@mirdita.de>",
+  "name": "fu-xml-beer",
+  "description": "Ohne Alster kein Bier",
   "private": true,
   "main": "build.js",
   "browser": {
@@ -13,7 +12,8 @@
     "watch": "cross-env NODE_ENV=development webpack --watch --progress --hide-modules"
   },
   "dependencies": {
-    "bootstrap": "^3.3.7",
+    "bootstrap": "4.0.0-alpha.6",
+    "moment": "^2.18.1",
     "vue": "^2.3.4",
     "vue-bootstrap-pagination": "^2.10.2",
     "vue-localstorage": "^0.2.0",
@@ -37,6 +37,8 @@
     "html-webpack-plugin": "^2.28.0",
     "less": "^2.7.2",
     "less-loader": "^4.0.4",
+    "node-sass": "^4.5.3",
+    "sass-loader": "^6.0.6",
     "vue-loader": "^12.2",
     "vue-style-loader": "^3.0.1",
     "vue-template-compiler": "^2.3",
@@ -45,4 +47,3 @@
     "webpack-subresource-integrity": "^1.0.0-rc.1"
   }
 }
-
