@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="artifacts">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="artifact" type="artifactType" maxOccurs="unbounded" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="artifactType">
+        <xs:sequence>
+            <xs:element name="type" type="xs:string" />
+            <xs:element name="title" type="xs:string" />
+            <xs:element name="location" type="locationType" />
+            <xs:element name="description" type="xs:string" />
+            <xs:element name="actors" type="actorsType" />
+            <xs:element name="dates" type="datesType" />
+            <xs:element name="urls" type="urlsType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="locationType">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" maxOccurs="1"/>
+            <xs:element name="inventoryNr" type="xs:string" maxOccurs="1" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="actorsType">
+        <xs:sequence>
+            <xs:element name="actor" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="name" type="xs:string"/>
+                        <xs:element name="role" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="urlsType">
+        <xs:sequence>
+            <xs:element name="url" maxOccurs="unbounded" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="datesType">
+        <xs:sequence>
+            <xs:element name="displayDate" type="xs:string" />
+            <xs:element name="earliestDate" type="xs:string" />
+            <xs:element name="latestDate" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
