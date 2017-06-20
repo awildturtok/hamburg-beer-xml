@@ -27,15 +27,15 @@
 
 Vue.component('additional-item', {
   props: ['item'],
-<!--TODO set property --> 
-  template: '{{item.key}} : {{ item.text }}'
+  template: '{{item.key}}:  <div property="dbp:{{item.key}}><a href="{{item.res}}">{{ item.text }}</a></div>'
 })
 
 var image-additional = new Vue({
   el: 'image-info',
   data: {
     additionalInfo: [
-      { key: "dbpedia:place", text: 'dbpedia:Hamburg' },
+      { key: "dbpedia:place", text: 'Hamburg', res: 'dbpedia:Hamburg' },
+	{ key: "dbpedia:size", text: '100cm', res: '#' }
     ]
   }
 })
