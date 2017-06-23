@@ -1,15 +1,16 @@
 function createQuery(queryStr2) {
      var query = {
         queryStr: queryStr2,
-        defaultGraph: "",
+	defaultGraph:"",
         prefixes: [],    
 	results:null,
+	finished:false,
         addPrefix: function(prefixStr, url){
             var prefix = [prefixStr, url]
             this.prefixes.push(prefix);
         },
         setDefaultGraph: function(graph){
-            defaultGraph = graph;
+            this.defaultGraph = graph;
         },
         addPrefixes: function() {
             var newQueryStr = "";
@@ -21,8 +22,8 @@ function createQuery(queryStr2) {
         },
         createURL: function(service, newQueryStr){
             var url = service+"?";
-            if(this.defaultGraph!=""){
-                url+="default-graph-uri="+defaultGraph+"&";
+            if(this.defaultG!=""){
+                url+="default-graph-uri="+encodeURIComponent(this.defaultGraph)+"&";
             }
             url+="query=";
             //encode newQueryStr
@@ -39,7 +40,7 @@ function createQuery(queryStr2) {
             httpGetAsync(url, this, function(response, query){
 		var jsonResponse = response;
 		query.results = parseJsonResponse(jsonResponse);
-
+		query.finished = true;
 	    });
             
         },
@@ -51,6 +52,7 @@ function createQuery(queryStr2) {
                 var jsonResponse = response;
 		var obj  = JSON.parse(jsonResponse);
            	query.results = obj.boolean;
+		query.finished = true;
             });
             //parse results
             
@@ -122,6 +124,7 @@ function httpGetAsync(url, query, callback)
     if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
         callback(xmlHttp.responseText, query);
     }
+
     xmlHttp.open("GET", url, true); // true for asynchronous 
     xmlHttp.setRequestHeader('Content-Type', 'application/sparql-results+json')
     xmlHttp.send(null);

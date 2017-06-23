@@ -1,23 +1,24 @@
 //TODO bootstrap - make divs as seen in sketch
-//TODO xmlDB interface? get db data
-
-
 <template>
-    <div id="detail" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
-        <h1>Detail</h1>
-    
-        <div class="image-container">
-		<img v-bind:src="image">
-        </div>
-	<div class="image-info" v-bind:about="about">
-		<div class="title" property="dc:title">{{image-title}}</div>
-		<div class="artist" property="dc:creator">{{image-artist}}</div>, 
-		<div class="date" property="dc:date">{{image-date}}</div>
-		<div class="description" property="dc:description">{{image-description}}</div>
-		<div class="additional"       
-			v-for="item in additionalInfo"
+    <div id="detail" class="row" v-bind:about="about"  xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
+	<div class="title col-sm-12""  property="dc:title">{{image-title}}</div>
+	<div class="artists col-sm-12"      
+			v-for="item in image-artists"
       			v-bind:item="item"
-      			v-bind:key="item.key">
+      			v-bind:key="item.name">
+	</div>
+	<div class="col-sm-2"><a @click="prev"><</a></div>
+        <div class="image-container col-sm-8">
+		<img :src="images[Math.abs(currentNumber) % images.length]" />
+        </div>
+	<div class="col-sm-2"><a @click="next">></a></div>
+	<div class="image-info col-sm-12">
+		<div class="description col-sm-7" property="dc:description">{{image-description}}</div>
+		<div class="image-meta col-sm-5">
+			Earliest Date: <div class="date" property="dc:date">{{image-edate}}</div>
+			Display Date: <div class="date" property="dc:date">{{image-ddate}}</div>
+			Latest Date: <div class="date" property="dc:date">{{image-ldate}}</div>
+			Location: <div class="location" property="">{{image-location}}</div>
 		</div>
         </div>
     </div>
@@ -27,92 +28,137 @@
 
 <script>
 
-//TODO get ID from paramter or whatever, get all info from xmlDB 
 
-var title = "";
-var artist = "";
-var date = "";
-var description = "";
-
-//TODO Get additional Info from XMLDB
-var additionalXML = [{ key: "place", text: 'Hamburg' },
-	{ key: "size", text: '100cm' }];
-var additional = [];
-
-
-// Create SPARQL services for europeana and dbpedia
-var euroSparql = "http://sparql.europeana.eu";
-var dbpediaSparql = "http://dbpedia.org/sparql";
-
-//get about resource through title name
-var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+title+"\"}", "http://data.europeana.eu/");
-query.select(euroSparql);
-
-var aboutTriple="", aboutRes="http://xml-beer.org/"+title.replace(/\W/g, '');
-if(query.results.hasNext()){
-	query.results.next();
-	aboutRes = query.results.getFromIndex(0)[0];
-	//TODO check if artist is really label (WTF?) or resource
-	aboutTriple = "<"+aboutRes+"> dc:creator \""+artist+"\". ";
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-//get artist resource through title name
-query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist+"\". "+aboutTriple+"}", "http://data.europeana.eu/");
-query.select(euroSparql);
-if(query.results.hasNext()){
-	query.results.next();
-	// artist has a resource
-	artist = "<a href=\""+query.results.getFromIndex(0)[0]+"\">"+artist+"</a>";
+function getXDB(query){
+    var xmlHttp = new XMLHttpRequest();
+    var url = "localhost:8984/rest/beer?query=";
+
+    xmlHttp.open("GET", url+query, false); 
+    xmlHttp.send(null); 
+    return xmlHttp.response;
 }
 
-for (i = 0; i < additionalXML.length; i++) {	
-	var key = additionalXML[i][0];
-	var value = additionalXML[i][1];
-	//get DBpedia Property from key
-	query = defaultQuery("SELECT ?p WHERE {?p rdfs:label  \""+key+"\". ?p rdf:type rdf:Property}", "http://dbpedia.org");
+async function provideData(){
+	//Init vars
+	var type="";
+	var title="";
+	var artists=[];
+	var location={};
+	var description;
+	var displayDate, earliestDate, latestDate;
+	var urls =[];
 
-	var res2;
-	var resValue="http://xml-beer.org/resource/"+value.replace(/\W/g, ''), propKey;
-	if(!query.results.hasNext()){
-		propKey = "http://xml-beer.org/property/"+key.replace(/\W/g, '');
+	//TODO get Type from DBpedia and use typeOf	
 
-		//get DBpedia Resource from propKey and value
-		var query2 =  defaultQuery("SELECT ?s WHERE {?s rdfs:label \""+value+"\"}", "http://dbpedia.org");
-		res2 = query2.results;
+	//TODO get Role from DBpedia
+
+	//get info from XMLDB
+	var xquery = "for $artifact in /artifacts/artifact where $artifact/title/text()="+title+" return ";
+	type = getXDB(xquery+"$artifact/type/text()");
+	artistStr = getXDB(xquery+"<a>{$artifact/actors/actor/name/text()};;{$artifact/actors/actor/role/text()}</a>")
+	// split artistStr per Line remove a /a and split by ;; 
+	artistsArray = artistStr.match(/[^\r\n]+/g);	
+	for(var k=0;k<artistsArray.length;k++){
+		var tmpArr = artistsArray[k].replace("<a>", "").replace("</a>", "").split(";;");
+		artists.push({name:tmpArr[0], role:tmpArr[1]}, res="#", roleRes="#");
 	}
-	else{
+	locationStr = getXDB(xquery+"<a>{$artifact/location/name/text()};;{$artifact/location/inventoryNr/text()}</a>")
+	locationArray = locationStr.match(/[^\r\n]+/g);	
+	for(var k=0;k<locationArray.length;k++){
+		var tmpArr = locationArray[k].replace("<a>", "").replace("</a>", "").split(";;");
+		//TODO seperate tmpArr[0] into place and city
+		location.push({name:tmpArr[0], inventoryNr:tmpArr[1]});
+	}
+	
+	description = getXDB(xquery+"$artifact/description/text()");
+	displayDate = getXDB(xquery+"$artifact/date/displayDate/text()");
+	earliestDate = getXDB(xquery+"$artifact/date/earliestDate/text()");
+	latestDate = getXDB(xquery+"$artifact/date/latestDate/text()");
+	urlsStr = getXDB(xquery+"$artifact/urls/url/text()");
+	//split URLs per Line	
+	urls = urlsStr.match(/[^\r\n]+/g);
+
+	// Create SPARQL services for europeana and dbpedia
+	var euroSparql = "http://sparql.europeana.eu";
+	var dbpediaSparql = "http://dbpedia.org/sparql";
+
+	//get about resource through title name
+	var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+title+"\"@de}", "http://data.europeana.eu/");
+	query.select(euroSparql);
+	while(!query.finished) {await sleep(100);}
+
+	aboutRes="http://xml-beer.org/"+title.replace(/\W/g, '');
+	var aboutIsRes=false;
+	if(query.results.hasNext()){
 		query.results.next();
-		propKey = query.results.getFromIndex(0)[0];
-		//get DBpedia Resource from propKey and value
-		//FIXME this can result into incorrect results
-		var query2 =  defaultQuery("SELECT ?s WHERE {?s rdfs:label \""+value+"\". ?t <"+propKey+"> ?s}", "http://dbpedia.org");
-		res2 = query2.results;
+		aboutRes = query.results.getFromIndex(0);
+
+		aboutIsRes=true;
 	}
-	if(res2.hasNext()){
-		res2.next();
-		resValue = res2.getFromIndex(0)[0];
+	var aboutTriple="";
+	for(var u=0;u<artists.length;u++){
+		var artist = artists[u];
+		if(aboutIsRes){
+			aboutTriple = "<"+aboutRes+"> dc:creator \""+artist+"\". ";
+		}
+		query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist+"\"@en. "+aboutTriple+"}", "http://data.europeana.eu/");
+		query.select(euroSparql);
+		while(!query.finished) {await sleep(100);}
+
+		if(query.results.hasNext()){
+			query.results.next();	
+			// artist has a resource
+			artists[u].res= query.results.getFromIndex(0);
+		}
+		setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
 	}
-	additional.push({key: propKey, text: value, res: resValue});
-    	
-} 
+}
 
 
-Vue.component('additional-item', {
-  props: ['item'],
-  template: '{{item.key}}:  <div property="{{item.key}}><a href="{{item.res}}">{{ item.text }}</a></div>'
-})
+provideData();
 
-var detail = new Vue({
-  el: 'detail',
-  data: {
-    about: aboutRes,
-    image-title: title,
-    image-artist: artist,
-    image-date: date, 
-    image-description = description,
-    additionalInfo: additional;
-  }
-})
+function setItems(aboutRes, title, artist, ddate, edate,ldate, description, location){
+
+	Vue.component('image-artists', {
+	  props: ['item'],
+	  template: '<a property="dc:creator" typeOf="dbo:Person" href="{{item.res}}">{{ item.name }}</a><div resource="{{item.res}}"><a property="dbp:Role" href="{{item.roleRes}}">({{item.role}})</a></div>, ' 
+	})
+
+	var detail = new Vue({
+	  el: 'detail',
+	  data: {
+	    about: aboutRes,
+	    images: urls,
+	    image-title: title,
+	    image-artists: artists,
+	    image-ldate: ldate,
+	    image-ddate: ddate,
+	    image-edate: edate, 
+	    image-description = description,
+	    image-location = location.name+"; "=location.inventoryNr;
+	  },
+   	  ready: function () {
+	        this.startRotation();
+    	  },
+
+    	  methods: {
+        	startRotation: function() {
+        	    this.timer = setInterval(this.next, 3000);
+        	},
+		next: function() {
+      		      this.currentNumber += 1
+      		},
+        	prev: function() {
+        	    this.currentNumber -= 1
+        	}
+    	  }
+	})
+	
+}
 
 function defaultQuery(queryStr, defaultGraph){
 	var query = createQuery(queryStr);
