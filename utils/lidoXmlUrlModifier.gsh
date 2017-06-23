@@ -45,6 +45,7 @@ def getNames = { name ->
     {
         String withoutExt = name - ~/_\d+.jpg/
         names << withoutExt
+
         String nr = withoutExt - ~/^AB/
         names << 'AB ' + nr
         names << 'AB-' + nr
@@ -53,15 +54,14 @@ def getNames = { name ->
     if (name.startsWith('E'))
     {
         def m = (name =~ /^EB?-(\d+)-(\d+)/)
-        String asInvId = m[0][1] + ',' + m[0][2] 
-        names << asInvId
+        names << m[0][1..2].join(',')
     }
 
     if (name ==~ /\d+-\d+/)
     {
         def m = name =~ /(\d+)-(\d+)/
-        names << (m[0][1] + '-' + m[0][2])
-        names << (m[0][1] + ',' + m[0][2])
+        names << m[0][1..2].join('-')
+        names << m[0][1..2].join(',')
     }
     return names
 }
@@ -78,8 +78,8 @@ for (int i = 0; i < lines.size(); i = i + 4)
     }
     nameToUrls[name] << url
 }
-List usedNodes = []
 
+List usedNodes = []
 
 nameToUrls.each
 { name, urls ->
