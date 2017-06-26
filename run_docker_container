@@ -1,0 +1,16 @@
+#!/bin/bash
+CONTAINER_NAME=beer_container
+IMAGE_NAME=beer_image
+
+which docker > /dev/null
+[ "$?" != "0" ] && echo "Please install docker!" && exit 1
+
+sudo docker build -t "$IMAGE_NAME" .
+[ "$?" != "0" ] && echo "FAILED TO BUID beer image!" && exit 1
+
+C_NR=$(sudo docker ps --filter NAME="$CONTAINER_NAME" | wc -l)
+[ "$C_NR" != "1" ] && echo "removing running container" && sudo docker rm -f "$CONTAINER_NAME" 
+
+echo "start container"
+sudo docker run -tdi --name "$CONTAINER_NAME" --publish 1984:1984 --publish 8984:8984 "$IMAGE_NAME":latest
+
