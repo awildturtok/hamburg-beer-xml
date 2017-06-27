@@ -8,4 +8,7 @@ RUN apt-get update && apt-get install -y \
     vim
 
 USER basex
-ADD . /srv/BaseXData
+
+#ADD . /srv/BaseXData
+COPY ./utils/clean.xml /srv/BaseXData/clean.xml
+COPY ./create_db.sh .
