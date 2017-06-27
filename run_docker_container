@@ -13,4 +13,4 @@ C_NR=$(sudo docker ps --filter NAME="$CONTAINER_NAME" | wc -l)
 
 echo "start container"
 sudo docker run -tdi --name "$CONTAINER_NAME" --publish 1984:1984 --publish 8984:8984 "$IMAGE_NAME":latest
-
+./run_db_init.sh.sh
