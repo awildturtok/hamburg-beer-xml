@@ -39,8 +39,8 @@ function sleep(ms) {
 function getXDB(query){
     var xmlHttp = new XMLHttpRequest();
     var url = "localhost:8984/rest/beer?query=";
-
     xmlHttp.open("GET", url+query, false); 
+    xmlHttp.setRequestHeader("Authorization", "Basic " + btoa("admin:admin"));
     xmlHttp.send(null); 
     return xmlHttp.response;
 }
