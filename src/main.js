@@ -13,11 +13,14 @@ Vue.url.options.root = 'localhost:8080';
 
 import App from './App.vue';
 import TimeLine from './TimeLine.vue';
+import DetailView from './DetailView2.vue';
+
 
 const router = new VueRouter({
     mode: 'history',
     routes: [
-        { path: '/', component: TimeLine },
+	{ path: '/', component: TimeLine },
+        { path: '/detail/', component: DetailView }
     ],
     linkActiveClass: 'active'
 });

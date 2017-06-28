@@ -2,7 +2,11 @@
     <div id="detail" class="row"   xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
 	<div v-bind:about="about">
 	<div class="title col-sm-12""  property="dc:title">{{imagetitle}}</div>
-
+	<div class="artists col-sm-12"      
+			v-for="artist in imageartists"
+      			:key="artist.name"
+      			v-bind="artist">
+	</div>
 	<div class="col-sm-1"><a @click="prev"><</a></div>
         <div class="imagecontainer col-sm-10">
 		<img :src="images[Math.abs(currentNumber) % images.length]" />
@@ -21,8 +25,8 @@
     </div>
 </template>
 
-
 <script src="simplesparql.js"/>
+
 
 <script>
 import Artist from "./Artist.vue";
@@ -53,7 +57,7 @@ async function provideData(){
 
 
 	var pathArray = window.location.pathname.split( '/' );
-	var inventoryNr = pathArray[pathArry.length-1];
+	var inventoryNr = pathArray[pathArray.length-1];
  	
 
 	//get info from XMLDB
@@ -134,11 +138,10 @@ async function provideData(){
 }
 
 
-
-export default {	  
-	components: { Artist },
-	name: 'detail',
-	  data:  provideData,
+export default {
+	components: {Artist},
+	  name: 'detail',
+	  data: provideData,
 	ready: function () {
 	        this.startRotation();
     	  },
@@ -154,7 +157,7 @@ export default {
         	    this.currentNumber -= 1
         	}
     	  }
-	}
+}
 	
 function defaultQuery(queryStr, defaultGraph){
 	var query = createQuery(queryStr);
@@ -165,5 +168,6 @@ function defaultQuery(queryStr, defaultGraph){
 	query.addPrefix("dc", "http://purl.org/dc/elements/1.1/");
 	return query;
 }
+
 
 </script>
