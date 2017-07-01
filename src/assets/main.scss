@@ -8,11 +8,14 @@
     justify-content: space-between;
 
     margin: 0 5em;
+    position: relative;
+    padding-left: 5em;
 
     .event{
         @extend .card;
 
         margin-top: 2em;
+        width: 400px; // todo better sizing
 
         img {
             // @extend .card-img-middle;
@@ -20,5 +23,23 @@
             height: auto;
             margin: 100% auto;
         }
+
+        
+    }
+
+    :first-child{
+        margin-top: 0px;
     }
 }
+
+
+.events::before {
+    /* this is the vertical line */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 18px;
+    height: 100%;
+    width: 4px;
+    background: #d7e4ed;
+}    

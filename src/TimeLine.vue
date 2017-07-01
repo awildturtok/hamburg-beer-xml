@@ -1,11 +1,14 @@
 <template>
-    <div id="timeline">
+    <section>
         <h1>Hio</h1>
     
-        <div class="events">
-            <event v-for="event in events" :key="event.id" v-bind="event"></event>
+        <div id="timeline">
+    
+            <div class="events">
+                <event v-for="event in events" :key="event.id" v-bind="event"></event>
+            </div>
         </div>
-    </div>
+    </section>
 </template>
 
 <script>
@@ -19,14 +22,59 @@ export default {
     components: { Event },
     data: () => {
         return {
-            // todo events will be fetched via API
+            // todo events will be fetched via an API
             events: [{
                 title: "a title",
                 description: "Did you know!?"
             }, {
                 title: "a title too",
                 date: moment(),
-                image : "https://vuejs.org/images/logo.png",
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
+                description: "this seems ridiculous, why would <b>I</b> care?"
+            }, {
+                title: "a title too",
+                date: moment(),
+                image: "https://vuejs.org/images/logo.png",
                 description: "this seems ridiculous, why would <b>I</b> care?"
             }]
         };
