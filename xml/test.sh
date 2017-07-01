@@ -14,8 +14,10 @@ which xsltproc > /dev/null
 
 [ "$FAIL" == "1" ] && exit 1
 
+echo "> Creating $RESULT_FILE"
 xsltproc "$STYLESHEET" "$XML" > "$RESULT_FILE"
 [ "$?" != "0" ] && echo "Ooops something went wrong during transformation" && exit 1
 
+echo "> Validating $RESULT_FILE"
 xmllint --noout --schema "$SCHEMA" "$RESULT_FILE"
 [ "$?" != "0" ] && echo "Ooops something went wrong during validation" && exit 1
