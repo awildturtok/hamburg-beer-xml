@@ -17,12 +17,15 @@ module.exports = {
 		crossOriginLoading: 'anonymous',
 	},
 	module: {
-		rules: [
-			{
+		rules: [{
 				test: /\.vue$/,
 				loader: 'vue-loader',
 				options: {
-                    transformToRequire : { img: 'src', image: 'xlink:href', object: 'data' },
+					transformToRequire: {
+						img: 'src',
+						image: 'xlink:href',
+						object: 'data'
+					},
 					loaders: {
 						css: ExtractTextPlugin.extract({
 							use: 'css-loader',
@@ -34,7 +37,7 @@ module.exports = {
 			{
 				test: /\.js$/,
 				loader: 'babel-loader',
-                include: [ 
+				include: [
 					path.resolve(__dirname, './src'),
 					path.resolve(__dirname, './node_modules/vue-strap/src'),
 					path.resolve(__dirname, './node_modules/vue-localstorage/src'),
@@ -50,14 +53,14 @@ module.exports = {
 					name: '[name].[hash:7].[ext]'
 				}
 			},
-            {
-                test: /\.less$/,
-                use: ExtractTextPlugin.extract([ 'css-loader', 'less-loader' ])
-            },
-            {
-                test: /\.scss$/,
-                use: ExtractTextPlugin.extract([ 'css-loader', 'sass-loader' ])
-            },
+			{
+				test: /\.less$/,
+				use: ExtractTextPlugin.extract(['css-loader', 'less-loader'])
+			},
+			{
+				test: /\.scss$/,
+				use: ExtractTextPlugin.extract(['css-loader', 'sass-loader'])
+			},
 		]
 	},
 	resolve: {
@@ -66,22 +69,24 @@ module.exports = {
 		}
 	},
 	externals: {
+		fs: '{}',
+		tls: '{}',
+		net: '{}',
+		console: '{}'
 	},
 	plugins: [
 		new SriPlugin({
-		 	hashFuncNames: ['sha256', 'sha384'],
-            enabled: process.env.NODE_ENV === 'production',
+			hashFuncNames: ['sha256', 'sha384'],
+			enabled: process.env.NODE_ENV === 'production',
 		}),
-		new CopyWebpackPlugin([
-			{
-				from: './src/assets/*x.png',
-				to: 'assets',
-				flatten: true
-			}
-		]),
+		new CopyWebpackPlugin([{
+			from: './src/assets/*x.png',
+			to: 'assets',
+			flatten: true
+		}]),
 		new HtmlWebpackPlugin({
 			template: './src/index.html',
-            attrs: ['img:src', 'object:data']
+			attrs: ['img:src', 'object:data']
 		}),
 		new ExtractTextPlugin('style.[hash:7].css'),
 	],
@@ -90,8 +95,10 @@ module.exports = {
 		noInfo: true,
 		proxy: {
 			'/api': {
-                target: 'http://localhost:8000',
-				pathRewrite: {'^/api' : '/backend'},
+				target: 'http://localhost:8984',
+				pathRewrite: {
+					'^/api': ''
+				},
 				logLevel: 'debug'
 			}
 		}
@@ -116,11 +123,11 @@ if (process.env.NODE_ENV === 'production') {
 		new webpack.LoaderOptionsPlugin({
 			minimize: true
 		}),
-        new CompressionPlugin({
-            asset: "[path].gz[query]",
-            algorithm: "gzip",
-            test: /\.(js|html|css|svg)$/,
-            minRatio: 0
-        }),
+		new CompressionPlugin({
+			asset: "[path].gz[query]",
+			algorithm: "gzip",
+			test: /\.(js|html|css|svg)$/,
+			minRatio: 0
+		}),
 	])
 }
