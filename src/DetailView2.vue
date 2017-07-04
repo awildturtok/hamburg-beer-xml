@@ -25,7 +25,7 @@
     </div>
 </template>
 
-<script src="simplesparql.js"/>
+<script src="simplesparql.js"> </script>
 
 
 <script>
