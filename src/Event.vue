@@ -1,9 +1,9 @@
 
 <template>
     <div class="event">
-        <div v-if="dates" class="date">
+        <!--<div v-if="dates" class="date">
             <div>{{dateText}}</div>
-        </div>
+        </div>-->
         <h4 class="card-header">{{title}}</h4>
         <img v-if="previewImg" :src="previewImg" ></img>        
         <div class="card-block" v-if="description" v-html="description"></div>
