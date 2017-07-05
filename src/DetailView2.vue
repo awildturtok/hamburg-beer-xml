@@ -1,8 +1,8 @@
 <template>
     <div id="detail" class="row"   xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
 	<div v-bind:about="about">
-	<div class="title col-sm-12""  property="dc:title">{{imagetitle}}</div>
-	<div class="artists col-sm-12"      
+	<div class="card-header title col-sm-12""  property="dc:title">{{imagetitle}}</div>
+	<!-- <div class="artists col-sm-12"      
 			v-for="artist in imageartists"
       			:key="artist.name"
       			v-bind="artist">
@@ -11,15 +11,15 @@
         <div class="imagecontainer col-sm-10">
 		<img :src="images[Math.abs(currentNumber) % images.length]" />
         </div>
-	<div class="col-sm-1"><a @click="next">></a></div>
+	<div class="col-sm-1"><a @click="next">></a></div>-->
 	<div class="imageinfo col-sm-12">
-		<div class="description col-sm-7" property="dc:description">{{imagedescription}}</div>
-		<div class="imagemeta col-sm-5"><!-- Use startDate, endDate isntead of date -->
-			Earliest Date: <div class="date" property="dc:date">{{imageedate}}</div>
-			Display Date: <div class="date" property="dc:date">{{imageddate}}</div>
-			Latest Date: <div class="date" property="dc:date">{{imageldate}}</div>
-			Location: <div class="location" property="">{{imagelocation}}</div>
-		</div>
+		<span class="description col-sm-7" property="dc:description">{{imagedescription}}</span></br></br>
+		<span class="imagemeta col-sm-5"><!-- Use startDate, endDate isntead of date --></hr>
+			<div><b>Earliest Date:</b> <span class="date" property="dc:date">{{imageedate}}</span></div>
+			<div><b>Display Date:</b> <span class="date" property="dc:date">{{imageddate}}</span></div>
+			<div><b>Latest Date:</b> <span class="date" property="dc:date">{{imageldate}}</span></div>
+			<div><b>Location:</b> <span class="location" property="">{{imagelocation}}</span></div>
+		</span>
         </div>
 	</div>	
     </div>
@@ -30,22 +30,31 @@
 
 <script>
 import Artist from "./Artist.vue";
-
+import ssjs from './simplesparql.js';
+var moment = require("moment");
+var R = require("ramda");
+var parseXml = require('xml2js').parseString;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getXDB(query){
-    var xmlHttp = new XMLHttpRequest();
-    var url = "localhost:8984/rest/beer?query=";
-    xmlHttp.open("GET", url+query, false); 
-    xmlHttp.setRequestHeader("Authorization", "Basic " + btoa("admin:admin"));
-    xmlHttp.send(null); 
-    return xmlHttp.response;
+function getXDB(query, self){
+    return self.$http.get("/api/rest/beer/", {
+                params: {
+                    query: query
+                },
+                headers: {
+                    "Authorization": "Basic " + btoa("admin:admin"), //todo fetch credentials from somewhere.
+                    "Content-Type": "application/text"
+                }
+            }
+                , err => console.error(err)
+            ).then(r => r.text())
 }
 
-async function provideData(){
+
+async function provideData(self){
 	//Init vars
 	var type="";
 	var title="";
@@ -56,38 +65,40 @@ async function provideData(){
 	var urls =[];
 
 
-	var pathArray = window.location.pathname.split( '/' );
-	var inventoryNr = pathArray[pathArray.length-1];
- 	
+	//var pathArray = window.location.pathname.split( '/' );
+	//var inventoryNr = pathArray[pathArray.length-1];
+ 	var inventoryNr = "1971,2";
 
 	//get info from XMLDB
-	var xquery = "for $artifact in /artifacts/artifact where $artifact/location/inventoryNr/text()="+title+" return ";
-	title = getXDB(xquery+"$artifact/title/text()");
-	type = getXDB(xquery+"$artifact/type/text()");
+	var xquery = "for $artifact in /artifacts/artifact where $artifact/location/inventoryNr/text()=\""+inventoryNr+"\" return ";
+	
+	title = getXDB(xquery+"<a>$artifact/title/text()</a>", self);
+	
+	type = getXDB(xquery+"<a>$artifact/type/text()</a>", self);
 	//TODO get Type from DBpedia and use typeOf	
 
-	artistStr = getXDB(xquery+"<a>{$artifact/actors/actor/name/text()};;{$artifact/actors/actor/role/text()}</a>")
+	var artistStr = getXDB(xquery+"<a>{$artifact/actors/actor/name/text()};;{$artifact/actors/actor/role/text()}</a>", self)
 	// split artistStr per Line remove a /a and split by ;; 
-	artistsArray = artistStr.match(/[^\r\n]+/g);	
-	for(var k=0;k<artistsArray.length;k++){
-		var tmpArr = artistsArray[k].replace("<a>", "").replace("</a>", "").split(";;");
-		artists.push({name:tmpArr[0], role:tmpArr[1]}, res="#", roleRes="#");
-	}
-	locationStr = getXDB(xquery+"<a>{$artifact/location/name/text()};;{$artifact/location/inventoryNr/text()}</a>")
-	locationArray = locationStr.match(/[^\r\n]+/g);	
-	for(var k=0;k<locationArray.length;k++){
-		var tmpArr = locationArray[k].replace("<a>", "").replace("</a>", "").split(";;");
+	//artistsArray = artistStr.match(/[^\r\n]+/g);	
+	//for(var k=0;k<artistsArray.length;k++){
+	//	var tmpArr = artistsArray[k].replace("<a>", "").replace("</a>", "").split(";;");
+	//	artists.push({name:tmpArr[0], role:tmpArr[1]}, res="#", roleRes="#");
+	//}
+	var locationStr = getXDB(xquery+"<a>{$artifact/location/name/text()};;{$artifact/location/inventoryNr/text()}</a>", self)
+	//var locationArray = locationStr.match(/[^\r\n]+/g);	
+	//for(var k=0;k<locationArray.length;k++){
+	//	var tmpArr = locationArray[k].replace("<a>", "").replace("</a>", "").split(";;");
 
-		location.push({name:tmpArr[0], inventoryNr:tmpArr[1]});
-	}
+	//	location.push({name:tmpArr[0], inventoryNr:tmpArr[1]});
+	//}
 	
-	description = getXDB(xquery+"$artifact/description/text()");
-	displayDate = getXDB(xquery+"$artifact/date/displayDate/text()");
-	earliestDate = getXDB(xquery+"$artifact/date/earliestDate/text()");
-	latestDate = getXDB(xquery+"$artifact/date/latestDate/text()");
-	urlsStr = getXDB(xquery+"$artifact/urls/url/text()");
+	description = getXDB(xquery+"<a>$artifact/description/text()</a>", self);
+	displayDate = getXDB(xquery+"<a>$artifact/date/displayDate/text()</a>", self);
+	earliestDate = getXDB(xquery+"<a>$artifact/date/earliestDate/text()</a>", self);
+	latestDate = getXDB(xquery+"<a>$artifact/date/latestDate/text()</a>", self);
+	var urlsStr = getXDB(xquery+"<a>$artifact/urls/url/text()</a>", self);
 	//split URLs per Line	
-	urls = urlsStr.match(/[^\r\n]+/g);
+	//urls = urlsStr.match(/[^\r\n]+/g);
 
 	// Create SPARQL services for europeana and dbpedia
 	var euroSparql = "http://sparql.europeana.eu";
@@ -125,9 +136,9 @@ async function provideData(){
 		//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
 		return {
 		    about: aboutRes,
-		    images: urls,
+		    //images: urls,
 		    imagetitle: title,
-		    imageartists: artists,
+		    //imageartists: artists,
 		    imageldate: ldate,
 		    imageddate: ddate,
 		    imageedate: edate, 
@@ -141,22 +152,25 @@ async function provideData(){
 export default {
 	components: {Artist},
 	  name: 'detail',
-	  data: provideData,
-	ready: function () {
-	        this.startRotation();
-    	  },
-
-    	  methods: {
-        	startRotation: function() {
-        	    this.timer = setInterval(this.next, 3000);
-        	},
-		next: function() {
-      		      this.currentNumber += 1
-      		},
-        	prev: function() {
-        	    this.currentNumber -= 1
-        	}
-    	  }
+	  data:  () => { return {
+            // todo events will be fetched via an API
+            detail: [{
+                imagetitle: "Loading",
+                imagedescription: "... Please wait."
+            }]
+        };},
+	  props: ["about", "imagetitle", "imagedescription", , "imageedate", "imageddate", "imagelocation", "imageldate"],
+	created() {
+        	this.fetchData();
+    	},
+	methods: {
+        fetchData() {
+            console.log("Loading Timeline");
+            var self = this;
+	    var dataDir = provideData(self);
+	    return dataDir;
+        }
+    },
 }
 	
 function defaultQuery(queryStr, defaultGraph){
