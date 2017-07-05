@@ -1,17 +1,15 @@
 <template>
-    <div id="detail" class="row"   xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
+    <div id="detail" class=""   xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
 	<div v-bind:about="about">
-	<div class="card-header title col-sm-12""  property="dc:title">{{imagetitle}}</div>
+	<div class="card-header title col-sm-12"  property="dc:title">{{imagetitle}}</div>
 	<!-- <div class="artists col-sm-12"      
 			v-for="artist in imageartists"
       			:key="artist.name"
       			v-bind="artist">
 	</div>
-	<div class="col-sm-1"><a @click="prev"><</a></div>
         <div class="imagecontainer col-sm-10">
-		<img :src="images[Math.abs(currentNumber) % images.length]" />
+		<img :src="images.url" />
         </div>
-	<div class="col-sm-1"><a @click="next">></a></div>-->
 	<div class="imageinfo col-sm-12">
 		<span class="description col-sm-7" property="dc:description">{{imagedescription}}</span></br></br>
 		<span class="imagemeta col-sm-5"><!-- Use startDate, endDate isntead of date --></hr>
@@ -30,16 +28,28 @@
 
 <script>
 import Artist from "./Artist.vue";
-import ssjs from './simplesparql.js';
-var moment = require("moment");
-var R = require("ramda");
+
 var parseXml = require('xml2js').parseString;
+
+
+// Basic wrapper for xml parser library to have it as a promise and leverage its API.
+var parseXmlAsync = (text, options = { async: true }) =>
+    new Promise((resolve, reject) =>
+        parseXml(text, options
+            , (error, value) => {
+                if (error)
+                    reject(error);
+                else
+                    resolve(value);			    
+            })
+    )
+
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getXDB(query, self){
+function fetchRaw(query, self){
     return self.$http.get("/api/rest/beer/", {
                 params: {
                     query: query
@@ -54,77 +64,63 @@ function getXDB(query, self){
 }
 
 
-async function provideData(self){
+async function provideData(artifact){
 	//Init vars
 	var type="";
 	var title="";
 	var artists=[];
-	var location={};
+	var location="";
 	var description;
 	var displayDate, earliestDate, latestDate;
 	var urls =[];
 
-
-	//var pathArray = window.location.pathname.split( '/' );
-	//var inventoryNr = pathArray[pathArray.length-1];
- 	var inventoryNr = "1971,2";
-
-	//get info from XMLDB
-	var xquery = "for $artifact in /artifacts/artifact where $artifact/location/inventoryNr/text()=\""+inventoryNr+"\" return ";
-	
-	title = getXDB(xquery+"<a>$artifact/title/text()</a>", self);
-	
-	type = getXDB(xquery+"<a>$artifact/type/text()</a>", self);
-	//TODO get Type from DBpedia and use typeOf	
-
-	var artistStr = getXDB(xquery+"<a>{$artifact/actors/actor/name/text()};;{$artifact/actors/actor/role/text()}</a>", self)
-	// split artistStr per Line remove a /a and split by ;; 
-	//artistsArray = artistStr.match(/[^\r\n]+/g);	
-	//for(var k=0;k<artistsArray.length;k++){
-	//	var tmpArr = artistsArray[k].replace("<a>", "").replace("</a>", "").split(";;");
-	//	artists.push({name:tmpArr[0], role:tmpArr[1]}, res="#", roleRes="#");
-	//}
-	var locationStr = getXDB(xquery+"<a>{$artifact/location/name/text()};;{$artifact/location/inventoryNr/text()}</a>", self)
-	//var locationArray = locationStr.match(/[^\r\n]+/g);	
-	//for(var k=0;k<locationArray.length;k++){
-	//	var tmpArr = locationArray[k].replace("<a>", "").replace("</a>", "").split(";;");
-
-	//	location.push({name:tmpArr[0], inventoryNr:tmpArr[1]});
-	//}
-	
-	description = getXDB(xquery+"<a>$artifact/description/text()</a>", self);
-	displayDate = getXDB(xquery+"<a>$artifact/date/displayDate/text()</a>", self);
-	earliestDate = getXDB(xquery+"<a>$artifact/date/earliestDate/text()</a>", self);
-	latestDate = getXDB(xquery+"<a>$artifact/date/latestDate/text()</a>", self);
-	var urlsStr = getXDB(xquery+"<a>$artifact/urls/url/text()</a>", self);
-	//split URLs per Line	
-	//urls = urlsStr.match(/[^\r\n]+/g);
+	//Set native vars
+	type = artifact.type;
+	title = artifact.title;
+	description = artifact.description;
+	displayDate = artifact.dates.displayDate;
+	earliestDate = artifact.dates.displayDate;
+	latestDateDate = artifact.dates.displayDate;
+	location = artifact.location.name;
+	urls = artifact.urls;
+	artists = artifact.actors;	
 
 	// Create SPARQL services for europeana and dbpedia
-	var euroSparql = "http://sparql.europeana.eu";
-	var dbpediaSparql = "http://dbpedia.org/sparql";
+	var resourceEndpoint = "http://sparql.europeana.eu";
+	var propertyEndpoint = "http://dbpedia.org/sparql";
+
+	var resourceGraph = "http://data.europeana.eu/"
+	var propertyGraph = "http://dbpedia.org"
+
+	var baseURI = "http://hamburg-beer.xml/"
 
 	//get about resource through title name
-	var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+title+"\"@de}", "http://data.europeana.eu/");
-	query.select(euroSparql);
-	while(!query.finished) {await sleep(100);}
+	var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+title+"\"@de}", resourceGraph);
+	query.select(resourceEndpoint);
 
-	aboutRes="http://xml-beer.org/"+title.replace(/\W/g, '');
+	//Wait for results 
+	while(!query.finished) {await sleep(100);}
+	//Initialize about url with own url (use if no resource could be found)
+	aboutRes=baseURI+title.replace(/\W/g, '');
 	var aboutIsRes=false;
 	if(query.results.hasNext()){
 		query.results.next();
 		aboutRes = query.results.getFromIndex(0);
-
+		//Set about Res could be found
 		aboutIsRes=true;
 	}
+
 	var aboutTriple="";
+	//Get creator by 
 	for(var u=0;u<artists.length;u++){
 		var artist = artists[u];
 		if(aboutIsRes){
-			aboutTriple = "<"+aboutRes+"> dc:creator \""+artist+"\". ";
+			//use about Res to get creator (more confident than just by name"
+			aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
 		}
-		query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist+"\"@en. "+aboutTriple+"}", "http://data.europeana.eu/");
-		query.select(euroSparql);
+		query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist+"\"@en. "+aboutTriple+"}", resourceGraph);
+		query.select(resourceEndpoint);
+		//Wait for results 
 		while(!query.finished) {await sleep(100);}
 
 		if(query.results.hasNext()){
@@ -135,15 +131,15 @@ async function provideData(self){
 
 		//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
 		return {
-		    about: aboutRes,
-		    //images: urls,
-		    imagetitle: title,
-		    //imageartists: artists,
-		    imageldate: ldate,
-		    imageddate: ddate,
-		    imageedate: edate, 
-		    imagedescription: description,
-		    imagelocation: location.name+"; "+location.inventoryNr
+		    "about": aboutRes,
+		    "images": urls,
+		    "imagetitle": title,
+		    "imageartists": artists,
+		    "imageldate": ldate,
+		    "imageddate": ddate,
+		    "imageedate": edate, 
+		    "imagedescription": description,
+		    "imagelocation": location
 		  }
 	}
 }
@@ -159,16 +155,41 @@ export default {
                 imagedescription: "... Please wait."
             }]
         };},
-	  props: ["about", "imagetitle", "imagedescription", , "imageedate", "imageddate", "imagelocation", "imageldate"],
+	watch: {
+ 	       '$route': 'fetchData'
+	},
+	props: ["about", "imagetitle", "imagedescription", , "imageedate", "imageddate", "imagelocation", "imageldate"],
 	created() {
         	this.fetchData();
     	},
 	methods: {
+	fetchRaw(query) {
+            return this.$http.get("/api/rest/beer/", {
+                params: {
+                    query: query
+                },
+                headers: {
+                    "Authorization": "Basic " + btoa("admin:admin"), //todo fetch credentials from somewhere.
+                    "Content-Type": "application/text"
+                }
+            }
+                , err => console.error(err)
+            ).then(r => r.text())
+        },
         fetchData() {
-            console.log("Loading Timeline");
             var self = this;
-	    var dataDir = provideData(self);
-	    return dataDir;
+ 	    //TODO inventoryNr by url
+	    var inventoryNr = "1971,2";
+
+	    //get info from BaseX
+            var xquery = "for $artifact in /artifacts/artifact where $artifact/location/inventoryNr/text()=\""+inventoryNr+"\" return $artifact";
+	    //convert xml into JSON Dictionary
+	    var artifact;
+	    //TODO artifact will not be written
+	    this.fetchRaw(xquery).then(obj => parseXmlAsync(obj, { explicitArray: false }))
+		.then(root => artifact = root.artifact);
+
+	    self.detail = provideData(artifact);
         }
     },
 }
