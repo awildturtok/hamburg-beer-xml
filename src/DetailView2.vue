@@ -9,7 +9,7 @@
 	</div>
         <div class="imagecontainer col-sm-10">
 		<img :src="images.url" />
-        </div>
+        </div>-->
 	<div class="imageinfo col-sm-12">
 		<span class="description col-sm-7" property="dc:description">{{imagedescription}}</span></br></br>
 		<span class="imagemeta col-sm-5"><!-- Use startDate, endDate isntead of date --></hr>
@@ -30,6 +30,147 @@
 import Artist from "./Artist.vue";
 
 var parseXml = require('xml2js').parseString;
+
+
+function createQuery(queryStr2) {
+     var query = {
+        queryStr: queryStr2,
+	defaultGraph:"",
+        prefixes: [],    
+	results:null,
+	finished:false,
+        addPrefix: function(prefixStr, url){
+            var prefix = [prefixStr, url]
+            this.prefixes.push(prefix);
+        },
+        setDefaultGraph: function(graph){
+            this.defaultGraph = graph;
+        },
+        addPrefixes: function() {
+            var newQueryStr = "";
+            for(var i=0;i<this.prefixes.length;i++){
+                newQueryStr+="PREFIX "+this.prefixes[i][0]+": <"+this.prefixes[i][1]+"> ";
+            }
+            newQueryStr +=" "+this.queryStr;
+            return newQueryStr;
+        },
+        createURL: function(service, newQueryStr){
+            var url = service+"?";
+            if(this.defaultG!=""){
+                url+="default-graph-uri="+encodeURIComponent(this.defaultGraph)+"&";
+            }
+            url+="query=";
+            //encode newQueryStr
+            url+=encodeURIComponent(newQueryStr);
+            url+="&format=json";
+            return url;
+        },   
+        select: function(service){
+            //add prefixes to query
+            var newQueryStr = this.addPrefixes();
+            //create URL
+            var url = this.createURL(service, newQueryStr);
+	    var ret;
+            httpGetAsync(url, this, function(response, query){
+		var jsonResponse = response;
+		query.results = parseJsonResponse(jsonResponse);
+		query.finished = true;
+	    });
+            
+        },
+        ask : function(service){
+            var newQueryStr = this.addPrefixes();
+            //create URL
+            var url = this.createURL(service, newQueryStr);
+            httpGetAsync(url, this, function(response, query){
+                var jsonResponse = response;
+		var obj  = JSON.parse(jsonResponse);
+           	query.results = obj.boolean;
+		query.finished = true;
+            });
+            //parse results
+            
+        }
+    }
+    return query;
+}
+
+function parseJsonResponse(jsonStr){
+    
+    var obj = JSON.parse(jsonStr);
+    //create Object which contains table and mapping to variables 
+    var results = {
+        table:[],
+        vars:[],
+        index:-1,
+        getFromIndex: function(i){
+            //return object in column i at current row 
+            var row =  this.table[this.index];
+            return row[i];
+        },
+        getFromVarName: function(varName){
+            //get index for varName
+            var i = this.vars.indexOf(varName);
+            return this.getFromIndex(i);
+        },
+        get: function(){
+            //return complete current row
+            return this.table[this.index];
+        },
+        hasNext: function(){
+            //check if table has another rows
+            if(this.index+1 < this.table.length){
+                return true;
+            }
+            return false;
+        },
+        reset: function(){
+            //reset index
+            this.index=-1;
+        },
+        next: function(){
+            this.index++;
+        }
+
+    }
+    //map results and vars to results
+    results.vars = obj.head.vars;
+
+    var tmp = obj.results.bindings;
+
+
+    for(j=0;j<tmp.length;j++){
+        var row=[];
+        for(i=0;i<results.vars.length;i++){
+            row.push(tmp[j][results.vars[i]].value);
+        }
+        results.table.push(row);
+    }    
+    return results;
+}
+
+//props to stackoverflow https://stackoverflow.com/questions/247483/http-get-request-in-javascript#4033310
+function httpGetAsync(url, query, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+  
+    xmlHttp.onreadystatechange = function() { 
+    if (xmlHttp.readyState == 4)
+	if(xmlHttp.status == 200){
+        	callback(xmlHttp.responseText, query);
+	}	
+	else{
+		//TODO check why it does not work! (same problem as reverse Proxy? it works with simple html files)
+		console.log("Error in executing query");
+		query.finished=true;
+	}
+    }
+
+    xmlHttp.open("GET", url, true); // true for asynchronous 
+    xmlHttp.setRequestHeader('Content-Type', 'application/sparql-results+json')
+	console.log(url);
+    xmlHttp.send(null);
+}
 
 
 // Basic wrapper for xml parser library to have it as a promise and leverage its API.
@@ -64,7 +205,7 @@ function fetchRaw(query, self){
 }
 
 
-async function provideData(artifact){
+async function provideData(artifact, self){
 	//Init vars
 	var type="";
 	var title="";
@@ -97,14 +238,17 @@ async function provideData(artifact){
 
 	//get about resource through title name
 	var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+title+"\"@de}", resourceGraph);
+	console.log(query.queryStr);
 	query.select(resourceEndpoint);
 
 	//Wait for results 
+	console.log("D1");
 	while(!query.finished) {await sleep(100);}
+	console.log("D2");
 	//Initialize about url with own url (use if no resource could be found)
-	aboutRes=baseURI+title.replace(/\W/g, '');
+	var aboutRes=baseURI+title.replace(/\W/g, '');
 	var aboutIsRes=false;
-	if(query.results.hasNext()){
+	if(query.results !=null && query.results.hasNext()){
 		query.results.next();
 		aboutRes = query.results.getFromIndex(0);
 		//Set about Res could be found
@@ -113,36 +257,43 @@ async function provideData(artifact){
 
 	var aboutTriple="";
 	//Get creator by 
-	for(var u=0;u<artists.length;u++){
-		var artist = artists[u];
+	var artistsArr={};
+	console.log(artists);
+	for(var u=0;u<1;u++){
+		var artist = artists.actor;
+		artistsArr.name = artist.name;
 		if(aboutIsRes){
 			//use about Res to get creator (more confident than just by name"
 			aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
 		}
-		query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist+"\"@en. "+aboutTriple+"}", resourceGraph);
+		query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}", resourceGraph);
 		query.select(resourceEndpoint);
 		//Wait for results 
+		console.log("D3");
 		while(!query.finished) {await sleep(100);}
-
-		if(query.results.hasNext()){
+		console.log("D4");
+		if(query.results !=null && query.results.hasNext()){
 			query.results.next();	
 			// artist has a resource
-			artists[u].res= query.results.getFromIndex(0);
+			artistsArr.res= query.results.getFromIndex(0);
 		}
+	}
 
 		//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
-		return {
-		    "about": aboutRes,
-		    "images": urls,
-		    "imagetitle": title,
-		    "imageartists": artists,
-		    "imageldate": ldate,
-		    "imageddate": ddate,
-		    "imageedate": edate, 
-		    "imagedescription": description,
-		    "imagelocation": location
-		  }
-	}
+		var ret = {
+		    about: aboutRes,
+		    images: urls,
+		    imagetitle: title,
+		    imageartists: artistsArr,
+		    imageldate: latestDate,
+		    imageddate: displayDate,
+		    imageedate: earliestDate, 
+		    imagedescription: description,
+		    imagelocation: location
+		  };
+		self.detail = ret;
+		return ret;
+	
 }
 
 
@@ -153,8 +304,12 @@ export default {
             // todo events will be fetched via an API
             detail: [{
                 imagetitle: "Loading",
-                imagedescription: "... Please wait."
-            }]
+                imagedescription: "... Please wait.",
+		imageedate: "",
+		imageldate: "",
+		imageddate: "",  
+		imagelocation: ""          
+		}]
         };},
 	watch: {
  	       '$route': 'fetchData'
@@ -186,9 +341,9 @@ export default {
             var xquery = "for $artifact in /artifacts/artifact where $artifact/location/inventoryNr/text()=\""+inventoryNr+"\" return $artifact";
 	    //convert xml into JSON Dictionary
 	    var artifact = new Object();
-	    //TODO artifact will not be written
+	    //TODO wait for provideData
 	    this.fetchRaw(xquery).then(obj => parseXmlAsync(obj, { explicitArray: false }))
-		.then(root => { artifact = root.artifact; self.detail = provideData(artifact);});
+		.then(root => { artifact = root.artifact; self.detail = provideData(artifact, self); });
 	    
         }
     },
