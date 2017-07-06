@@ -74,13 +74,14 @@ async function provideData(artifact){
 	var displayDate, earliestDate, latestDate;
 	var urls =[];
 
+
 	//Set native vars
 	type = artifact.type;
 	title = artifact.title;
 	description = artifact.description;
 	displayDate = artifact.dates.displayDate;
 	earliestDate = artifact.dates.displayDate;
-	latestDateDate = artifact.dates.displayDate;
+	latestDate = artifact.dates.displayDate;
 	location = artifact.location.name;
 	urls = artifact.urls;
 	artists = artifact.actors;	
@@ -184,12 +185,11 @@ export default {
 	    //get info from BaseX
             var xquery = "for $artifact in /artifacts/artifact where $artifact/location/inventoryNr/text()=\""+inventoryNr+"\" return $artifact";
 	    //convert xml into JSON Dictionary
-	    var artifact;
+	    var artifact = new Object();
 	    //TODO artifact will not be written
 	    this.fetchRaw(xquery).then(obj => parseXmlAsync(obj, { explicitArray: false }))
-		.then(root => artifact = root.artifact);
-
-	    self.detail = provideData(artifact);
+		.then(root => { artifact = root.artifact; self.detail = provideData(artifact);});
+	    
         }
     },
 }
