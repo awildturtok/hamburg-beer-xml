@@ -4,7 +4,7 @@
         <!--<div v-if="dates" class="date">
             <div>{{dateText}}</div>
         </div>-->
-        <h4 class="card-header">{{title}}</h4>
+        <a :href="viewUrl"><h4 class="card-header">{{title}}</h4></a>
         <img v-if="previewImg" :src="previewImg" ></img>        
         <div class="card-block" v-if="description" v-html="description"></div>
     </div>
@@ -15,13 +15,13 @@ var moment = require("moment");
 
 export default {
     components: {},
-    props: ["id", "title", "description", "urls", "dates"],
+    props: ["id", "title", "description", "urls", "dates", "location"],
     computed: {
         dateText() {
             return this.dates.displayDate;
         },
         viewUrl() {
-            return "/view/" + this.id;
+            return "/detail/" + this.location.inventoryNr;
         },
         imgUrls() {
             if(!this.urls || !this.urls.url) return [];

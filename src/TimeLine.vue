@@ -1,6 +1,6 @@
 <template>
     <section>
-        <h1>Hio</h1>
+        <h1>Ohne Alster kein Bier</h1>
     
         <div id="timeline">
             <div class="events">
@@ -14,7 +14,6 @@
 import Event from "./Event.vue";
 
 var moment = require("moment");
-var R = require("ramda");
 var parseXml = require('xml2js').parseString;
 
 // Basic wrapper for xml parser library to have it as a promise and leverage its API.
@@ -30,9 +29,9 @@ var parseXmlAsync = (text, options = { async: true }) =>
     )
 
 // Das ist ein Beispiel für Asynchrones laden von XML, then kann beliebig verkettet werden, benutzung siehe weiter unten.
-parseXmlAsync("<a>b</a>")
-    .then(o => console.log(o))
-    .catch(o => console.error(o));
+// parseXmlAsync("<a>b</a>")
+//     .then(o => console.log(o))
+//     .catch(o => console.error(o));
 
 
 export default {

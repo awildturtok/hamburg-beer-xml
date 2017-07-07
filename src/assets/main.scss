@@ -13,13 +13,11 @@
         max-height: 550px;
         overflow: hidden;
         overflow-x: visible;
-
         img {
             // @extend .card-img-middle;
             width: auto;
             height: 150px;
-            object-fit: cover;
-            // margin: 100% auto;
+            object-fit: cover; // margin: 100% auto;
         }
         .date {
             position: absolute;
@@ -53,4 +51,19 @@
     height: 100%;
     width: 4px;
     background: #d7e4ed;
+}
+
+div.images>img {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+#detail {
+    margin-top: 5em;
+    margin-bottom: 5em;
+    margin-left: auto;
+    margin-right: auto;
+    width: 70%;
 }
