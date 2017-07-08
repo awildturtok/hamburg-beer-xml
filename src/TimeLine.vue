@@ -1,7 +1,6 @@
 <template>
     <section>
-        <h1>Ohne Alster kein Bier</h1>
-    
+        <h1 class="heading">Ohne Alster kein Bier</h1>
         <div id="timeline">
             <div class="events">
                 <event v-for="event in events" :key="event.id" v-bind="event"></event>

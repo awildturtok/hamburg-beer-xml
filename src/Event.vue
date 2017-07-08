@@ -1,12 +1,18 @@
 
 <template>
-    <div class="event">
-        <!--<div v-if="dates" class="date">
+    <div style="display:flex;">
+        <div v-if="dates" class="date">
             <div>{{dateText}}</div>
-        </div>-->
-        <a :href="viewUrl"><h4 class="card-header">{{title}}</h4></a>
-        <img v-if="previewImg" :src="previewImg" ></img>        
-        <div class="card-block" v-if="description" v-html="description"></div>
+        </div>
+        <div class="event">
+    
+            <a :href="viewUrl">
+                <h4 class="card-header">{{title}}</h4>
+            </a>
+            <img v-if="previewImg" :src="previewImg"></img>
+            <div class="card-block" v-if="description" v-html="description"></div>
+            <div class="fade-out"></div>
+        </div>
     </div>
 </template>
 
@@ -24,14 +30,14 @@ export default {
             return "/detail/" + this.location.inventoryNr;
         },
         imgUrls() {
-            if(!this.urls || !this.urls.url) return [];
+            if (!this.urls || !this.urls.url) return [];
 
-            if(!Array.isArray(this.urls.url))
+            if (!Array.isArray(this.urls.url))
                 return [this.urls.url];
-            
+
             return this.urls.url;
         },
-        previewImg(){
+        previewImg() {
             return this.imgUrls[0];
         }
     }
