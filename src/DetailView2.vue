@@ -4,8 +4,27 @@
 			<h1 class="card-title" property="dc:title">{{artifact.title}}</h1>
 			<div class="card-block" property="dc:description" v-html="artifact.description">
 			</div>
-			<div class="images">
+			<!--<div class="images">
 				<img class="card-img-bottom" v-for="url in imgUrls" :src="url" :key="url"></img>
+			</div>-->
+			<div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+				<ol class="carousel-indicators">
+					<li v-for="(url,index) in imgUrls"  :key="url" data-target="#carouselExampleIndicators" :data-slide-to="index"></li>
+					
+				</ol>
+				<div class="carousel-inner" role="listbox">
+					<div v-for="(url,index) in imgUrls"  :key="url" class="carousel-item" v-bind:class="{ active: index == 0 }">
+						<img class="d-block img-fluid" src="#" :data-src="url" :src="url" :alt="artifact.title">
+					</div>
+				</div>
+				<a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+					<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+					<span class="sr-only">Previous</span>
+				</a>
+				<a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+					<span class="carousel-control-next-icon" aria-hidden="true"></span>
+					<span class="sr-only">Next</span>
+				</a>
 			</div>
 		</div>
 	</div>
@@ -63,13 +82,13 @@ export default {
 	},
 	computed: {
 		imgUrls() {
-            if(!this.artifact.urls || !this.artifact.urls.url) return [];
+			if (!this.artifact.urls || !this.artifact.urls.url) return [];
 
-            if(!Array.isArray(this.artifact.urls.url))
-                return [this.artifact.urls.url];
-            
-            return this.artifact.urls.url;
-        },
+			if (!Array.isArray(this.artifact.urls.url))
+				return [this.artifact.urls.url];
+
+			return this.artifact.urls.url;
+		},
 	},
 	methods: {
 		fetchRaw(query) {
