@@ -59,6 +59,15 @@ var parseXml = require('xml2js').parseString;
 
 console.log(simplesparql);
 
+function defaultQuery(queryStr, defaultGraph) {
+	var query = simplesparql.createQuery(queryStr);
+	query.setDefaultGraph(defaultGraph);
+	query.addPrefix("foaf", "http://xmlns.com/foaf/0.1/");
+	query.addPrefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+	query.addPrefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+	query.addPrefix("dc", "http://purl.org/dc/elements/1.1/");
+	return query;
+}
 
 // Basic wrapper for xml parser library to have it as a promise and leverage its API.
 var parseXmlAsync = (text, options = { async: true }) =>
@@ -215,15 +224,7 @@ export default {
 	},
 }
 
-function defaultQuery(queryStr, defaultGraph) {
-	var query = createQuery(queryStr);
-	query.setDefaultGraph(defaultGraph);
-	query.addPrefix("foaf", "http://xmlns.com/foaf/0.1/");
-	query.addPrefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-	query.addPrefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
-	query.addPrefix("dc", "http://purl.org/dc/elements/1.1/");
-	return query;
-}
+
 
 
 </script>
