@@ -5,10 +5,9 @@
             <div>{{dateText}}</div>
         </div>
         <div class="event">
-    
-            <a :href="viewUrl">
+            <router-link :to="viewUrl">
                 <h4 class="card-header">{{title}}</h4>
-            </a>
+            </router-link>
             <img v-if="previewImg" :src="previewImg"></img>
             <div class="card-block" v-if="description" v-html="description"></div>
             <div class="fade-out"></div>
@@ -27,7 +26,8 @@ export default {
             return this.dates.displayDate;
         },
         viewUrl() {
-            return "/detail/" + this.location.inventoryNr;
+
+            return !!this.location ? "/detail/" + this.location.inventoryNr : "/";
         },
         imgUrls() {
             if (!this.urls || !this.urls.url) return [];

@@ -10,5 +10,6 @@ RUN apt-get update && apt-get install -y \
 USER basex
 
 #ADD . /srv/BaseXData
+COPY ./dist/ /srv/BaseXWeb/static
 COPY ./utils/clean.xml /srv/BaseXData/clean.xml
 COPY ./create_db.sh .
