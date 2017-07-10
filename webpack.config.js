@@ -41,9 +41,6 @@ module.exports = {
 					path.resolve(__dirname, './src'),
 					path.resolve(__dirname, './node_modules/vue-strap/src'),
 					path.resolve(__dirname, './node_modules/vue-localstorage/src'),
-				],
-				exclude: [
-					path.resolve(__dirname, './src/msa.min.js'),
 				]
 			},
 			{
@@ -52,10 +49,6 @@ module.exports = {
 				options: {
 					name: '[name].[hash:7].[ext]'
 				}
-			},
-			{
-				test: /\.less$/,
-				use: ExtractTextPlugin.extract(['css-loader', 'less-loader'])
 			},
 			{
 				test: /\.scss$/,
@@ -75,6 +68,9 @@ module.exports = {
 		console: '{}'
 	},
 	plugins: [
+		new webpack.DefinePlugin({
+			'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+		}),
 		new SriPlugin({
 			hashFuncNames: ['sha256', 'sha384'],
 			enabled: process.env.NODE_ENV === 'production',
@@ -107,27 +103,23 @@ module.exports = {
 }
 
 if (process.env.NODE_ENV === 'production') {
+	module.exports.output.publicPath = '/static/';
 	module.exports.devtool = '#source-map'
 	// http://vue-loader.vuejs.org/en/workflow/production.html
 	module.exports.plugins = (module.exports.plugins || []).concat([
-		new webpack.DefinePlugin({
-			'process.env': {
-				NODE_ENV: '"production"'
-			}
-		}),
-		new webpack.optimize.UglifyJsPlugin({
-			compress: {
-				warnings: false
-			}
-		}),
-		new webpack.LoaderOptionsPlugin({
-			minimize: true
-		}),
-		new CompressionPlugin({
-			asset: "[path].gz[query]",
-			algorithm: "gzip",
-			test: /\.(js|html|css|svg)$/,
-			minRatio: 0
-		}),
+		// new webpack.optimize.UglifyJsPlugin({
+		// 	compress: {
+		// 		warnings: false
+		// 	}
+		// }),
+		// new webpack.LoaderOptionsPlugin({
+		// 	minimize: true
+		// }),
+		// new CompressionPlugin({
+		// 	asset: "[path].gz[query]",
+		// 	algorithm: "gzip",
+		// 	test: /\.(js|html|css|svg)$/,
+		// 	minRatio: 0
+		// }),
 	])
 }
