@@ -1,66 +1,3 @@
-function createQuery(queryStr2) {
-    var query = {
-        queryStr: queryStr2,
-        defaultGraph: "",
-        prefixes: [],
-        results: null,
-        finished: false,
-        addPrefix: function (prefixStr, url) {
-            this.prefixes.push({
-                prefix: prefixStr,
-                url: url
-            });
-        },
-        setDefaultGraph: function (graph) {
-            this.defaultGraph = graph;
-        },
-        addPrefixes: function () {
-            return prefixes.map(prefix => "PREFIX " + prefix.prefix + ": <" + prefix.url + "> ")
-                .join(" ") +
-                this.queryStr;
-        },
-        createURL: function (service, newQueryStr) {
-            var url = service + "?";
-            if (!this.defaultG.isEmpty()) {
-                url += "default-graph-uri=" + encodeURIComponent(this.defaultGraph) + "&";
-            }
-            url += "query=";
-            //encode newQueryStr
-            url += encodeURIComponent(newQueryStr);
-            url += "&format=json";
-            return url;
-        },
-        select: function (service) {
-            //add prefixes to query
-            var newQueryStr = this.addPrefixes();
-            //create URL
-            var url = this.createURL(service, newQueryStr);
-            var ret;
-            // todo daraus kannst du auch ein Promise machen, was du raus gibst.
-            httpGetAsync(url, this, function (response, query) {
-                var jsonResponse = response;
-                query.results = parseJsonResponse(jsonResponse);
-                query.finished = true;
-            });
-
-        },
-        ask: function (service) {
-            var newQueryStr = this.addPrefixes();
-            //create URL
-            var url = this.createURL(service, newQueryStr);
-            httpGetAsync(url, this, function (response, query) {
-                var jsonResponse = response;
-                var obj = JSON.parse(jsonResponse);
-                query.results = obj.boolean;
-                query.finished = true;
-            });
-            //parse results
-
-        }
-    }
-    return query;
-}
-
 function parseJsonResponse(jsonStr) {
 
     var obj = JSON.parse(jsonStr);
@@ -135,5 +72,72 @@ function httpGetAsync(url, query, callback) {
     xmlHttp.setRequestHeader('Content-Type', 'application/sparql-results+json')
     xmlHttp.send(null);
 }
+
+export default {
+    createQuery(queryStr2) {
+        var query = {
+            queryStr: queryStr2,
+            defaultGraph: "",
+            prefixes: [],
+            results: null,
+            finished: false,
+            addPrefix: function (prefixStr, url) {
+                this.prefixes.push({
+                    prefix: prefixStr,
+                    url: url
+                });
+            },
+            setDefaultGraph: function (graph) {
+                this.defaultGraph = graph;
+            },
+            addPrefixes: function () {
+                return this.prefixes.map(prefix => "PREFIX " + prefix.prefix + ": <" + prefix.url + "> ")
+                    .join(" ") +
+                    this.queryStr;
+            },
+            createURL: function (service, newQueryStr) {
+                var url = service + "?";
+                if (!this.defaultGraph.length == 0) {
+                    url += "default-graph-uri=" + encodeURIComponent(this.defaultGraph) + "&";
+                }
+                url += "query=";
+                //encode newQueryStr
+                url += encodeURIComponent(newQueryStr);
+                url += "&format=json";
+                return url;
+            },
+            select: function (service) {
+                //add prefixes to query
+                var newQueryStr = this.addPrefixes();
+                //create URL
+                var url = this.createURL(service, newQueryStr);
+                var ret;
+                // todo daraus kannst du auch ein Promise machen, was du raus gibst.
+                httpGetAsync(url, this, function (response, query) {
+                    var jsonResponse = response;
+                    query.results = parseJsonResponse(jsonResponse);
+                    query.finished = true;
+                });
+
+            },
+            ask: function (service) {
+                var newQueryStr = this.addPrefixes();
+                //create URL
+                var url = this.createURL(service, newQueryStr);
+                httpGetAsync(url, this, function (response, query) {
+                    var jsonResponse = response;
+                    var obj = JSON.parse(jsonResponse);
+                    query.results = obj.boolean;
+                    query.finished = true;
+                });
+                //parse results
+
+            }
+        }
+        return query;
+    }
+}
+
+
 
 console.log("finished loading sparql");
