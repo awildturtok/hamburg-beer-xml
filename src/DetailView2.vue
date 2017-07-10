@@ -1,30 +1,49 @@
 <template>
 	<div id="detail" class="card" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
 		<div v-bind:about="about">
-			<h1 class="card-title" property="dc:title">{{artifact.title}}</h1>
-			<div class="card-block" property="dc:description" v-html="artifact.description">
-			</div>
-			<!--<div class="images">
-				<img class="card-img-bottom" v-for="url in imgUrls" :src="url" :key="url"></img>
-			</div>-->
-			<div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+			<h1 class="card-header" property="dc:title">{{artifact.title}}
+				<span :v-if="artifact.type && artifact.type.length > 0">({{artifact.type}})</span>
+			</h1>
+			<div id="artifacts-carousel" class="carousel slide" data-ride="carousel">
 				<ol class="carousel-indicators">
-					<li v-for="(url,index) in imgUrls"  :key="url" data-target="#carouselExampleIndicators" :data-slide-to="index"></li>
-					
+					<li v-for="(url,index) in imgUrls" :key="url" data-target="#artifacts-carousel" :data-slide-to="index"></li>
+	
 				</ol>
 				<div class="carousel-inner" role="listbox">
-					<div v-for="(url,index) in imgUrls"  :key="url" class="carousel-item" v-bind:class="{ active: index == 0 }">
+					<div v-for="(url,index) in imgUrls" :key="url" class="carousel-item" v-bind:class="{ active: index == 0 }">
 						<img class="d-block img-fluid" src="#" :data-src="url" :src="url" :alt="artifact.title">
 					</div>
 				</div>
-				<a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+				<a class="carousel-control-prev" href="#artifacts-carousel" role="button" data-slide="prev">
 					<span class="carousel-control-prev-icon" aria-hidden="true"></span>
 					<span class="sr-only">Previous</span>
 				</a>
-				<a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+				<a class="carousel-control-next" href="#artifacts-carousel" role="button" data-slide="next">
 					<span class="carousel-control-next-icon" aria-hidden="true"></span>
 					<span class="sr-only">Next</span>
 				</a>
+			</div>
+			<div class="card-block">
+				<div property="dc:description" v-html="artifact.description"></div>
+	
+				<div v-if="actors.length > 0" style="margin-top: 2em;">
+					<h2>Beteiligte</h2>
+					<table class="table table-striped table-sm">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Aufgabe</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="actor in actors" :key="actor">
+								<td>{{actor.name}}</td>
+								<td>{{actor.role}}</td>
+							</tr>
+	
+						</tbody>
+					</table>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -32,12 +51,13 @@
 
 
 <script>
-console.log("detail view included.");
 
 import simplesparql from "./simplesparql.js"
 import Artist from "./Artist.vue";
 
 var parseXml = require('xml2js').parseString;
+
+console.log(simplesparql);
 
 
 // Basic wrapper for xml parser library to have it as a promise and leverage its API.
@@ -89,10 +109,18 @@ export default {
 
 			return this.artifact.urls.url;
 		},
+		actors() {
+			if (!this.artifact.actors || !this.artifact.actors.actor) return [];
+
+			if (!Array.isArray(this.artifact.actor))
+				return [this.artifact.actors.actor];
+
+			return this.artifact.actors.actor;
+		},
 	},
 	methods: {
 		fetchRaw(query) {
-			return this.$http.get("/api/rest/beer/", {
+			return this.$http.get("/rest/beer/", {
 				params: {
 					query: query
 				},
