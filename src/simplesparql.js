@@ -1,100 +1,36 @@
-function createQuery(queryStr2) {
-     var query = {
-        queryStr: queryStr2,
-	defaultGraph:"",
-        prefixes: [],    
-	results:null,
-	finished:false,
-        addPrefix: function(prefixStr, url){
-            var prefix = [prefixStr, url]
-            this.prefixes.push(prefix);
-        },
-        setDefaultGraph: function(graph){
-            this.defaultGraph = graph;
-        },
-        addPrefixes: function() {
-            var newQueryStr = "";
-            for(i=0;i<this.prefixes.length;i++){
-                newQueryStr+="PREFIX "+this.prefixes[i][0]+": <"+this.prefixes[i][1]+"> ";
-            }
-            newQueryStr +=" "+this.queryStr;
-            return newQueryStr;
-        },
-        createURL: function(service, newQueryStr){
-            var url = service+"?";
-            if(this.defaultG!=""){
-                url+="default-graph-uri="+encodeURIComponent(this.defaultGraph)+"&";
-            }
-            url+="query=";
-            //encode newQueryStr
-            url+=encodeURIComponent(newQueryStr);
-            url+="&format=json";
-            return url;
-        },   
-        select: function(service){
-            //add prefixes to query
-            var newQueryStr = this.addPrefixes();
-            //create URL
-            var url = this.createURL(service, newQueryStr);
-	    var ret;
-            httpGetAsync(url, this, function(response, query){
-		var jsonResponse = response;
-		query.results = parseJsonResponse(jsonResponse);
-		query.finished = true;
-	    });
-            
-        },
-        ask : function(service){
-            var newQueryStr = this.addPrefixes();
-            //create URL
-            var url = this.createURL(service, newQueryStr);
-            httpGetAsync(url, this, function(response, query){
-                var jsonResponse = response;
-		var obj  = JSON.parse(jsonResponse);
-           	query.results = obj.boolean;
-		query.finished = true;
-            });
-            //parse results
-            
-        }
-    }
-    return query;
-}
+function parseJsonResponse(jsonStr) {
 
-function parseJsonResponse(jsonStr){
-    
     var obj = JSON.parse(jsonStr);
     //create Object which contains table and mapping to variables 
     var results = {
-        table:[],
-        vars:[],
-        index:-1,
-        getFromIndex: function(i){
+        table: [],
+        tableByVars: [],
+        vars: [],
+        index: -1,
+        getFromIndex: function (i) {
             //return object in column i at current row 
-            var row =  this.table[this.index];
+            var row = this.table[this.index];
             return row[i];
         },
-        getFromVarName: function(varName){
+        getFromVarName: function (varName) {
             //get index for varName
+            // todo kannst hier eine memoization hinzufügen, dass du das nicht jedes mal neu suchen musst. Alternativ kannst du das Objekt auch direkt bauen.
             var i = this.vars.indexOf(varName);
             return this.getFromIndex(i);
         },
-        get: function(){
+        get: function () {
             //return complete current row
             return this.table[this.index];
         },
-        hasNext: function(){
+        hasNext: function () {
             //check if table has another rows
-            if(this.index+1 < this.table.length){
-                return true;
-            }
-            return false;
+            return this.index + 1 < this.table.length;
         },
-        reset: function(){
+        reset: function () {
             //reset index
-            this.index=-1;
+            this.index = -1;
         },
-        next: function(){
+        next: function () {
             this.index++;
         }
 
@@ -104,25 +40,32 @@ function parseJsonResponse(jsonStr){
 
     var tmp = obj.results.bindings;
 
+    results.tableByVars = obj.results.bindings
+        .map(row => results.vars.reduce((out, name) => {
+            out[name] = row[name].value;
+            return out;
+        }, {}));
 
-    for(j=0;j<tmp.length;j++){
-        var row=[];
-        for(i=0;i<results.vars.length;i++){
+    console.log(results.tableByVars);
+
+
+    for (j = 0; j < tmp.length; j++) {
+        var row = [];
+        for (i = 0; i < results.vars.length; i++) {
             row.push(tmp[j][results.vars[i]].value);
         }
         results.table.push(row);
-    }    
+    }
     return results;
 }
 
 //props to stackoverflow https://stackoverflow.com/questions/247483/http-get-request-in-javascript#4033310
-function httpGetAsync(url, query, callback)
-{
+function httpGetAsync(url, query, callback) {
     var xmlHttp = new XMLHttpRequest();
 
-    xmlHttp.onreadystatechange = function() { 
-    if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callback(xmlHttp.responseText, query);
+    xmlHttp.onreadystatechange = function () {
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText, query);
     }
 
     xmlHttp.open("GET", url, true); // true for asynchronous 
@@ -130,4 +73,71 @@ function httpGetAsync(url, query, callback)
     xmlHttp.send(null);
 }
 
+export default {
+    createQuery(queryStr2) {
+        var query = {
+            queryStr: queryStr2,
+            defaultGraph: "",
+            prefixes: [],
+            results: null,
+            finished: false,
+            addPrefix: function (prefixStr, url) {
+                this.prefixes.push({
+                    prefix: prefixStr,
+                    url: url
+                });
+            },
+            setDefaultGraph: function (graph) {
+                this.defaultGraph = graph;
+            },
+            addPrefixes: function () {
+                return this.prefixes.map(prefix => "PREFIX " + prefix.prefix + ": <" + prefix.url + "> ")
+                    .join(" ") +
+                    this.queryStr;
+            },
+            createURL: function (service, newQueryStr) {
+                var url = service + "?";
+                if (!this.defaultGraph.length == 0) {
+                    url += "default-graph-uri=" + encodeURIComponent(this.defaultGraph) + "&";
+                }
+                url += "query=";
+                //encode newQueryStr
+                url += encodeURIComponent(newQueryStr);
+                url += "&format=json";
+                return url;
+            },
+            select: function (service) {
+                //add prefixes to query
+                var newQueryStr = this.addPrefixes();
+                //create URL
+                var url = this.createURL(service, newQueryStr);
+                var ret;
+                // todo daraus kannst du auch ein Promise machen, was du raus gibst.
+                httpGetAsync(url, this, function (response, query) {
+                    var jsonResponse = response;
+                    query.results = parseJsonResponse(jsonResponse);
+                    query.finished = true;
+                });
 
+            },
+            ask: function (service) {
+                var newQueryStr = this.addPrefixes();
+                //create URL
+                var url = this.createURL(service, newQueryStr);
+                httpGetAsync(url, this, function (response, query) {
+                    var jsonResponse = response;
+                    var obj = JSON.parse(jsonResponse);
+                    query.results = obj.boolean;
+                    query.finished = true;
+                });
+                //parse results
+
+            }
+        }
+        return query;
+    }
+}
+
+
+
+console.log("finished loading sparql");

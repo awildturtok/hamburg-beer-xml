@@ -1,166 +1,66 @@
 <template>
-    <div id="detail" class="row"   xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
-	<div v-bind:about="about">
-	<div class="title col-sm-12""  property="dc:title">{{imagetitle}}</div>
-	<div class="artists col-sm-12"      
-			v-for="artist in imageartists"
-      			:key="artist.name"
-      			v-bind="artist">
-	</div>
-	<div class="col-sm-1"><a @click="prev"><</a></div>
-        <div class="imagecontainer col-sm-10">
-		<img :src="images[Math.abs(currentNumber) % images.length]" />
-        </div>
-	<div class="col-sm-1"><a @click="next">></a></div>
-	<div class="imageinfo col-sm-12">
-		<div class="description col-sm-7" property="dc:description">{{imagedescription}}</div>
-		<div class="imagemeta col-sm-5"><!-- Use startDate, endDate isntead of date -->
-			Earliest Date: <div class="date" property="dc:date">{{imageedate}}</div>
-			Display Date: <div class="date" property="dc:date">{{imageddate}}</div>
-			Latest Date: <div class="date" property="dc:date">{{imageldate}}</div>
-			Location: <div class="location" property="">{{imagelocation}}</div>
+	<div id="detail" class="card" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
+		<div v-bind:about="about">
+			<h1 class="card-header" property="dc:title">{{artifact.title}}
+				<span :v-if="artifact.type && artifact.type.length > 0">({{artifact.type}})</span>
+			</h1>
+			<div id="artifacts-carousel" class="carousel slide" data-ride="carousel">
+				<ol class="carousel-indicators">
+					<li v-for="(url,index) in imgUrls" :key="url" data-target="#artifacts-carousel" :data-slide-to="index"></li>
+	
+				</ol>
+				<div class="carousel-inner" role="listbox">
+					<div v-for="(url,index) in imgUrls" :key="url" class="carousel-item" v-bind:class="{ active: index == 0 }">
+						<img class="d-block img-fluid" src="#" :data-src="url" :src="url" :alt="artifact.title">
+					</div>
+				</div>
+				<a class="carousel-control-prev" href="#artifacts-carousel" role="button" data-slide="prev">
+					<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+					<span class="sr-only">Previous</span>
+				</a>
+				<a class="carousel-control-next" href="#artifacts-carousel" role="button" data-slide="next">
+					<span class="carousel-control-next-icon" aria-hidden="true"></span>
+					<span class="sr-only">Next</span>
+				</a>
+			</div>
+			<div class="card-block">
+				<div property="dc:description" v-html="artifact.description"></div>
+	
+				<div v-if="actors.length > 0" style="margin-top: 2em;">
+					<h2>Beteiligte</h2>
+					<table class="table table-striped table-sm">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Aufgabe</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="actor in actors" :key="actor">
+								<td>{{actor.name}}</td>
+								<td>{{actor.role}}</td>
+							</tr>
+	
+						</tbody>
+					</table>
+				</div>
+			</div>
 		</div>
-        </div>
-	</div>	
-    </div>
+	</div>
 </template>
-
-<script src="simplesparql.js"> </script>
 
 
 <script>
+
+import simplesparql from "./simplesparql.js"
 import Artist from "./Artist.vue";
 
+var parseXml = require('xml2js').parseString;
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+console.log(simplesparql);
 
-function getXDB(query){
-    var xmlHttp = new XMLHttpRequest();
-    var url = "localhost:8984/rest/beer?query=";
-    xmlHttp.open("GET", url+query, false); 
-    xmlHttp.setRequestHeader("Authorization", "Basic " + btoa("admin:admin"));
-    xmlHttp.send(null); 
-    return xmlHttp.response;
-}
-
-async function provideData(){
-	//Init vars
-	var type="";
-	var title="";
-	var artists=[];
-	var location={};
-	var description;
-	var displayDate, earliestDate, latestDate;
-	var urls =[];
-
-
-	var pathArray = window.location.pathname.split( '/' );
-	var inventoryNr = pathArray[pathArray.length-1];
- 	
-
-	//get info from XMLDB
-	var xquery = "for $artifact in /artifacts/artifact where $artifact/location/inventoryNr/text()="+title+" return ";
-	title = getXDB(xquery+"$artifact/title/text()");
-	type = getXDB(xquery+"$artifact/type/text()");
-	//TODO get Type from DBpedia and use typeOf	
-
-	artistStr = getXDB(xquery+"<a>{$artifact/actors/actor/name/text()};;{$artifact/actors/actor/role/text()}</a>")
-	// split artistStr per Line remove a /a and split by ;; 
-	artistsArray = artistStr.match(/[^\r\n]+/g);	
-	for(var k=0;k<artistsArray.length;k++){
-		var tmpArr = artistsArray[k].replace("<a>", "").replace("</a>", "").split(";;");
-		artists.push({name:tmpArr[0], role:tmpArr[1]}, res="#", roleRes="#");
-	}
-	locationStr = getXDB(xquery+"<a>{$artifact/location/name/text()};;{$artifact/location/inventoryNr/text()}</a>")
-	locationArray = locationStr.match(/[^\r\n]+/g);	
-	for(var k=0;k<locationArray.length;k++){
-		var tmpArr = locationArray[k].replace("<a>", "").replace("</a>", "").split(";;");
-
-		location.push({name:tmpArr[0], inventoryNr:tmpArr[1]});
-	}
-	
-	description = getXDB(xquery+"$artifact/description/text()");
-	displayDate = getXDB(xquery+"$artifact/date/displayDate/text()");
-	earliestDate = getXDB(xquery+"$artifact/date/earliestDate/text()");
-	latestDate = getXDB(xquery+"$artifact/date/latestDate/text()");
-	urlsStr = getXDB(xquery+"$artifact/urls/url/text()");
-	//split URLs per Line	
-	urls = urlsStr.match(/[^\r\n]+/g);
-
-	// Create SPARQL services for europeana and dbpedia
-	var euroSparql = "http://sparql.europeana.eu";
-	var dbpediaSparql = "http://dbpedia.org/sparql";
-
-	//get about resource through title name
-	var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+title+"\"@de}", "http://data.europeana.eu/");
-	query.select(euroSparql);
-	while(!query.finished) {await sleep(100);}
-
-	aboutRes="http://xml-beer.org/"+title.replace(/\W/g, '');
-	var aboutIsRes=false;
-	if(query.results.hasNext()){
-		query.results.next();
-		aboutRes = query.results.getFromIndex(0);
-
-		aboutIsRes=true;
-	}
-	var aboutTriple="";
-	for(var u=0;u<artists.length;u++){
-		var artist = artists[u];
-		if(aboutIsRes){
-			aboutTriple = "<"+aboutRes+"> dc:creator \""+artist+"\". ";
-		}
-		query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist+"\"@en. "+aboutTriple+"}", "http://data.europeana.eu/");
-		query.select(euroSparql);
-		while(!query.finished) {await sleep(100);}
-
-		if(query.results.hasNext()){
-			query.results.next();	
-			// artist has a resource
-			artists[u].res= query.results.getFromIndex(0);
-		}
-
-		//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
-		return {
-		    about: aboutRes,
-		    images: urls,
-		    imagetitle: title,
-		    imageartists: artists,
-		    imageldate: ldate,
-		    imageddate: ddate,
-		    imageedate: edate, 
-		    imagedescription: description,
-		    imagelocation: location.name+"; "+location.inventoryNr
-		  }
-	}
-}
-
-
-export default {
-	components: {Artist},
-	  name: 'detail',
-	  data: provideData,
-	ready: function () {
-	        this.startRotation();
-    	  },
-
-    	  methods: {
-        	startRotation: function() {
-        	    this.timer = setInterval(this.next, 3000);
-        	},
-		next: function() {
-      		      this.currentNumber += 1
-      		},
-        	prev: function() {
-        	    this.currentNumber -= 1
-        	}
-    	  }
-}
-	
-function defaultQuery(queryStr, defaultGraph){
-	var query = createQuery(queryStr);
+function defaultQuery(queryStr, defaultGraph) {
+	var query = simplesparql.createQuery(queryStr);
 	query.setDefaultGraph(defaultGraph);
 	query.addPrefix("foaf", "http://xmlns.com/foaf/0.1/");
 	query.addPrefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
@@ -168,6 +68,163 @@ function defaultQuery(queryStr, defaultGraph){
 	query.addPrefix("dc", "http://purl.org/dc/elements/1.1/");
 	return query;
 }
+
+// Basic wrapper for xml parser library to have it as a promise and leverage its API.
+var parseXmlAsync = (text, options = { async: true }) =>
+	new Promise((resolve, reject) =>
+		parseXml(text, options
+			, (error, value) => {
+				if (error)
+					reject(error);
+				else
+					resolve(value);
+			})
+	)
+
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+
+export default {
+	name: 'detail',
+	created() {
+		console.log("Starting to fetch");
+		this.fetchData();
+	},
+	components: { Artist },
+	watch: {
+		'$route': 'fetchData'
+	},
+	data: () => {
+		return {
+			artifact: {
+				imagetitle: "Loading",
+				imagedescription: "... Please wait.",
+				imageedate: "",
+				imagelocation: ""
+			}, about: {}
+
+		};
+	},
+	computed: {
+		imgUrls() {
+			if (!this.artifact.urls || !this.artifact.urls.url) return [];
+
+			if (!Array.isArray(this.artifact.urls.url))
+				return [this.artifact.urls.url];
+
+			return this.artifact.urls.url;
+		},
+		actors() {
+			if (!this.artifact.actors || !this.artifact.actors.actor) return [];
+
+			if (!Array.isArray(this.artifact.actor))
+				return [this.artifact.actors.actor];
+
+			return this.artifact.actors.actor;
+		},
+	},
+	methods: {
+		fetchRaw(query) {
+			return this.$http.get("/rest/beer/", {
+				params: {
+					query: query
+				},
+				headers: {
+					"Authorization": "Basic " + btoa("admin:admin"), //todo fetch credentials from somewhere.
+					"Content-Type": "application/text"
+				}
+			}
+				, err => console.error(err)
+			).then(r => r.text())
+		},
+		fetchData() {
+
+			var self = this;
+			var inventoryNr = this.$route.params.id;
+			console.log("Trying to fetch " + inventoryNr);
+
+
+			this.fetchRaw("//artifact[location/inventoryNr = \"" + inventoryNr + "\"]")
+				.then(obj => parseXmlAsync(obj, { explicitArray: false }))
+				.then(response => response.artifact)
+				.then(root => self.provideData(root))
+				.then(obj => { console.log(obj); return obj; })
+				.then(obj => {
+					self.artifact = obj.artifact;
+					self.about = obj.about;
+				});
+
+		},
+		provideData(artifact) {
+
+			// // Create SPARQL services for europeana and dbpedia
+			// var resourceEndpoint = "http://sparql.europeana.eu";
+			// var propertyEndpoint = "http://dbpedia.org/sparql";
+
+			// var resourceGraph = "http://data.europeana.eu/"
+			// var propertyGraph = "http://dbpedia.org"
+
+			// var baseURI = "http://hamburg-beer.xml/"
+
+			// //get about resource through title name
+			// var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+artifact.title+"\"@de}", resourceGraph);
+
+			// console.log(query.queryStr);
+			// query.select(resourceEndpoint);
+
+			// //Wait for results 
+			// console.log("D1");
+			// while(!query.finished) {await sleep(100);}
+			// console.log("D2");
+			// //Initialize about url with own url (use if no resource could be found)
+			// var aboutRes = baseURI + title.replace(/\W/g, '');
+			// var aboutIsRes = false;
+			// if(query.results !=null && query.results.hasNext()){
+			// 	query.results.next();
+			// 	aboutRes = query.results.getFromIndex(0);
+			// 	//Set about Res could be found
+			// 	aboutIsRes=true;
+			// }
+
+			// //Get creator by 
+			// var artistsArr={};
+
+			// for(var artist of artifact.actors.actor)
+			// {
+			//     var aboutTriple="";
+			// 	artistsArr.name = artist.name;
+			// 	if(aboutIsRes){
+			// 		//use about Res to get creator (more confident than just by name"
+			// 		aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
+			// 	}
+			// 	query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}", resourceGraph);
+			// 	query.select(resourceEndpoint);
+			// 	//Wait for results 
+			// 	console.log("D3");
+			// 	while(!query.finished) {await sleep(100);}
+			// 	console.log("D4");
+			// 	if(query.results !=null && query.results.hasNext()){
+			// 		query.results.next();	
+			// 		// artist has a resource
+			// 		artistsArr.res = query.results.getFromIndex(0);
+			// 	}
+			// }
+
+			//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
+
+			return {
+				artifact: artifact,
+				about: {},
+			};
+		}
+	},
+}
+
+
 
 
 </script>

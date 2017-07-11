@@ -8,12 +8,12 @@ which docker > /dev/null
 sudo docker build -t "$IMAGE_NAME" .
 [ "$?" != "0" ] && echo "FAILED TO BUILD beer image!" && exit 1
 
+sudo docker kill "$CONTAINER_NAME"
 sudo docker rm -f "$CONTAINER_NAME" 
 
 
 echo "start container"
 PWD=$(pwd)
-mkdir $PWD/server_content
 
-sudo docker run -tdi --name "$CONTAINER_NAME" -v $PWD/server_content:/srv/BaseXWeb/static -p 1984:1984 -p 8984:8984 "$IMAGE_NAME":latest
+sudo docker run -tdi --name "$CONTAINER_NAME" -v $PWD/dist:/srv/BaseXWeb/static -p 1984:1984 -p 8984:8984 "$IMAGE_NAME":latest
 ./run_db_init.sh

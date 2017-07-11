@@ -1,7 +1,6 @@
 <template>
     <section>
-        <h1>Hio</h1>
-    
+        <h1 class="heading">Ohne Alster kein Bier</h1>
         <div id="timeline">
             <div class="events">
                 <event v-for="event in events" :key="event.id" v-bind="event"></event>
@@ -14,7 +13,6 @@
 import Event from "./Event.vue";
 
 var moment = require("moment");
-var R = require("ramda");
 var parseXml = require('xml2js').parseString;
 
 // Basic wrapper for xml parser library to have it as a promise and leverage its API.
@@ -29,11 +27,6 @@ var parseXmlAsync = (text, options = { async: true }) =>
             })
     )
 
-// Das ist ein Beispiel für Asynchrones laden von XML, then kann beliebig verkettet werden, benutzung siehe weiter unten.
-parseXmlAsync("<a>b</a>")
-    .then(o => console.log(o))
-    .catch(o => console.error(o));
-
 
 export default {
     name: "timeline",
@@ -46,12 +39,13 @@ export default {
     },
     methods: {
         fetchRaw(query) {
-            return this.$http.get("/api/rest/beer/", {
+            return this.$http.get("/rest/beer/", {
                 params: {
                     query: query
                 },
                 headers: {
-                    "Authorization": "Basic " + btoa("admin:admin"), //todo fetch credentials from somewhere.
+                    // todo fetch credentials from somewhere
+                    "Authorization": "Basic " + btoa("admin:admin"),
                     "Content-Type": "application/text"
                 }
             }
@@ -65,7 +59,6 @@ export default {
             this.fetchRaw(".")
                 .then(obj => parseXmlAsync(obj, { explicitArray: false }))
                 .then(root => root.artifacts)
-                // .then(artifacts => { console.log(artifacts); return artifacts; })
                 .then(artifacts => self.events = artifacts.artifact)
                 ;
         }
@@ -74,7 +67,6 @@ export default {
     data: () => {
         console.log("setting up timeline data");
         return {
-            // todo events will be fetched via an API
             events: [{
                 title: "Loading",
                 description: "... Please wait."
