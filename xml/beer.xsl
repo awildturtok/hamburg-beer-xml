@@ -8,16 +8,15 @@ xmlns:lido="http://www.lido-schema.org">
         <xs:apply-templates/>
     </xs:template>
 
-    <xs:template match="/">
+    <xs:template match="/lido:lidoWrap">
         <artifacts>
-            <xs:apply-templates />
+            <xs:for-each select="lido:lido">
+                <xs:sort select="lido:descriptiveMetadata/lido:eventWrap/lido:eventSet/lido:event/lido:eventDate/lido:date/lido:earliestDate" data-type="number" />
+                <artifact>
+                    <xs:apply-templates />
+                </artifact>
+            </xs:for-each>
         </artifacts>
-    </xs:template>
-
-    <xs:template match="lido:lido">
-        <artifact>
-            <xs:apply-templates />
-        </artifact>
     </xs:template>
 
     <xs:template match="lido:descriptiveMetadata/lido:objectClassificationWrap/lido:objectWorkTypeWrap/lido:objectWorkType[@lido:type = 'Objektbezeichnung']">
