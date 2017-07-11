@@ -7,6 +7,10 @@ RUN apt-get update && apt-get install -y \
     libxml2-utils \
     vim
 
+COPY WEB-INF /srv/BaseXWeb/WEB-INF
+
+RUN chown -R basex:basex /srv/BaseXWeb
+
 USER basex
 
 #ADD . /srv/BaseXData
