@@ -1,6 +1,6 @@
 <template>
 	<div id="detail" class="card" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
-		<div v-bind:about="about">
+		<div v-bind:about="about.about">
 			<h1 class="card-header" property="dc:title">{{artifact.title}}
 				<span :v-if="artifact.type && artifact.type.length > 0">({{artifact.type}})</span>
 			</h1>
@@ -37,7 +37,7 @@
 						</thead>
 						<tbody>
 							<tr v-for="actor in actors" :key="actor">
-								<td>{{actor.name}}</td>
+								<td property="dc:artist" v-bind:src="actor.res">{{actor.name}}</td>
 								<td>{{actor.role}}</td>
 							</tr>
 						</tbody>
@@ -54,6 +54,8 @@
 import simplesparql from "./simplesparql.js"
 import Artist from "./Artist.vue";
 
+var SparqlClient = require('sparql-client');
+var util = require('util');
 var parseXml = require('xml2js').parseString;
 
 function defaultQuery(queryStr, defaultGraph) {
@@ -160,66 +162,67 @@ export default {
 			var propertyEndpoint = "/dbpedia";
 
 
+			// // Create SPARQL services for europeana and dbpedia
+			// var resourceEndpoint = "http://sparql.europeana.eu";
+			// var propertyEndpoint = "http://dbpedia.org/sparql";
+
 			var resourceGraph = "http://data.europeana.eu/"
 			var propertyGraph = "http://dbpedia.org"
 
 			var baseURI = "http://hamburg-beer.xml/"
 
-			//get about resource through title name
-			var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+artifact.title+"\"@de}", resourceGraph);
-
-			var about = {};
-
-			// console.log(query.queryStr);
-			query.select(resourceEndpoint, result => {
-				//Initialize about url with own url (use if no resource could be found)
-				var aboutRes = baseURI + artifact.title.replace(/\W/g, '');
-				var aboutIsRes = false;
-				if(query.results != null && query.results.hasNext()){
-					query.results.next();
-					aboutRes = query.results.getFromIndex(0);
-					console.log(aboutRes);
-					//Set about Res could be found
-					aboutIsRes=true;
+			// //get about resource through title name
+			var query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s dc:title  ?title FILTER(?title=\""+artifact.title+"\"^^xsd:string)}";
+			
+			//Initialize about url with own url (use if no resource could be found)
+			var aboutRes = baseURI + artifact.title.replace(/\W/g, '');
+			var aboutIsRes = false;
+	
+			var client = new SparqlClient(resourceEndpoint);
+			client.query(query)
+		 		.execute(function(error, results){
+  				if(results!=null){
+					console.log("Could find about resource");
+					aboutRes = results.s;
+					aboutIsRes = true;
 				}
+			});
+	
 
-				//Get creator by 
-				var artistsArr = about;
-				console.log(this.actors);
-				for(var artist of this.actors)
-				{
-					var aboutTriple="";
-					if(aboutIsRes){
-						//use about Res to get creator (more confident than just by name"
-						aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
-					}
-					query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}", resourceGraph);
+			//Get creator by 
+			var artistsArr={};
 
-					query.select(resourceEndpoint,artistRes => {
-						if(query.results !=null && query.results.hasNext()){
-							console.log("got some!");
-							
-							query.results.next();	
-							// artist has a resource
-							artistsArr[artist.name].res = query.results.getFromIndex(0);
-
+			for(var key in artifact.actors)			{
+				if (artifact.actors.hasOwnProperty(key)) {
+				var artist = artifact.actors[key];
+				var aboutTriple="";
+				console.log(artifact.actors);
+				console.log(artist);
+				artistsArr.name = artist.name;
+			 	if(aboutIsRes){
+			 		//use about Res to get creator (more confident than just by name"
+			 		aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
+			 	}
+			 	query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}";
+			 	
+				artist.res = baseURI + artist.name.replace(/\W/g, '');
+				client = new SparqlClient(resourceEndpoint);
+				client.query(query)
+		 			.execute(function(error, results){
+  						if(results!=null){
+							console.log("Artist resource found");
+							artist.res = results.s;
 						}
-
-						console.log(artistsArr);
 					});
 				}
+			}
 
-			});
-
-			
-
-			//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
 
 			console.log("done!?");
 
 			return {
 				artifact: artifact,
-				about: about,
+				about: {about: aboutRes},
 			};
 		}
 	},
