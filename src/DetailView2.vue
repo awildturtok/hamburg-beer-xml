@@ -40,7 +40,6 @@
 								<td>{{actor.name}}</td>
 								<td>{{actor.role}}</td>
 							</tr>
-	
 						</tbody>
 					</table>
 				</div>
@@ -56,8 +55,6 @@ import simplesparql from "./simplesparql.js"
 import Artist from "./Artist.vue";
 
 var parseXml = require('xml2js').parseString;
-
-console.log(simplesparql);
 
 function defaultQuery(queryStr, defaultGraph) {
 	var query = simplesparql.createQuery(queryStr);
@@ -80,12 +77,6 @@ var parseXmlAsync = (text, options = { async: true }) =>
 					resolve(value);
 			})
 	)
-
-
-function sleep(ms) {
-	return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 
 
 export default {
@@ -161,64 +152,74 @@ export default {
 		},
 		provideData(artifact) {
 
-			// // Create SPARQL services for europeana and dbpedia
+			// Create SPARQL services for europeana and dbpedia
 			// var resourceEndpoint = "http://sparql.europeana.eu";
 			// var propertyEndpoint = "http://dbpedia.org/sparql";
 
-			// var resourceGraph = "http://data.europeana.eu/"
-			// var propertyGraph = "http://dbpedia.org"
+			var resourceEndpoint = "/europeana";
+			var propertyEndpoint = "/dbpedia";
 
-			// var baseURI = "http://hamburg-beer.xml/"
 
-			// //get about resource through title name
-			// var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+artifact.title+"\"@de}", resourceGraph);
+			var resourceGraph = "http://data.europeana.eu/"
+			var propertyGraph = "http://dbpedia.org"
+
+			var baseURI = "http://hamburg-beer.xml/"
+
+			//get about resource through title name
+			var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+artifact.title+"\"@de}", resourceGraph);
+
+			var about = {};
 
 			// console.log(query.queryStr);
-			// query.select(resourceEndpoint);
+			query.select(resourceEndpoint, result => {
+				//Initialize about url with own url (use if no resource could be found)
+				var aboutRes = baseURI + artifact.title.replace(/\W/g, '');
+				var aboutIsRes = false;
+				if(query.results != null && query.results.hasNext()){
+					query.results.next();
+					aboutRes = query.results.getFromIndex(0);
+					console.log(aboutRes);
+					//Set about Res could be found
+					aboutIsRes=true;
+				}
 
-			// //Wait for results 
-			// console.log("D1");
-			// while(!query.finished) {await sleep(100);}
-			// console.log("D2");
-			// //Initialize about url with own url (use if no resource could be found)
-			// var aboutRes = baseURI + title.replace(/\W/g, '');
-			// var aboutIsRes = false;
-			// if(query.results !=null && query.results.hasNext()){
-			// 	query.results.next();
-			// 	aboutRes = query.results.getFromIndex(0);
-			// 	//Set about Res could be found
-			// 	aboutIsRes=true;
-			// }
+				//Get creator by 
+				var artistsArr = about;
+				console.log(this.actors);
+				for(var artist of this.actors)
+				{
+					var aboutTriple="";
+					if(aboutIsRes){
+						//use about Res to get creator (more confident than just by name"
+						aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
+					}
+					query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}", resourceGraph);
 
-			// //Get creator by 
-			// var artistsArr={};
+					query.select(resourceEndpoint,artistRes => {
+						if(query.results !=null && query.results.hasNext()){
+							console.log("got some!");
+							
+							query.results.next();	
+							// artist has a resource
+							artistsArr[artist.name].res = query.results.getFromIndex(0);
 
-			// for(var artist of artifact.actors.actor)
-			// {
-			//     var aboutTriple="";
-			// 	artistsArr.name = artist.name;
-			// 	if(aboutIsRes){
-			// 		//use about Res to get creator (more confident than just by name"
-			// 		aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
-			// 	}
-			// 	query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}", resourceGraph);
-			// 	query.select(resourceEndpoint);
-			// 	//Wait for results 
-			// 	console.log("D3");
-			// 	while(!query.finished) {await sleep(100);}
-			// 	console.log("D4");
-			// 	if(query.results !=null && query.results.hasNext()){
-			// 		query.results.next();	
-			// 		// artist has a resource
-			// 		artistsArr.res = query.results.getFromIndex(0);
-			// 	}
-			// }
+						}
+
+						console.log(artistsArr);
+					});
+				}
+
+			});
+
+			
 
 			//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
 
+			console.log("done!?");
+
 			return {
 				artifact: artifact,
-				about: {},
+				about: about,
 			};
 		}
 	},
