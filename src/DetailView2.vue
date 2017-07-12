@@ -1,6 +1,6 @@
 <template>
 	<div id="detail" class="card" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
-		<div v-bind:about="about">
+		<div v-bind:about="about.about">
 			<h1 class="card-header" property="dc:title">{{artifact.title}}
 				<span :v-if="artifact.type && artifact.type.length > 0">({{artifact.type}})</span>
 			</h1>
@@ -37,7 +37,7 @@
 						</thead>
 						<tbody>
 							<tr v-for="actor in actors" :key="actor">
-								<td>{{actor.name}}</td>
+								<td property="dc:artist" v-bind:src="actor.res">{{actor.name}}</td>
 								<td>{{actor.role}}</td>
 							</tr>
 	
@@ -55,6 +55,8 @@
 import simplesparql from "./simplesparql.js"
 import Artist from "./Artist.vue";
 
+var SparqlClient = require('sparql-client');
+var util = require('util');
 var parseXml = require('xml2js').parseString;
 
 console.log(simplesparql);
@@ -162,63 +164,64 @@ export default {
 		provideData(artifact) {
 
 			// // Create SPARQL services for europeana and dbpedia
-			// var resourceEndpoint = "http://sparql.europeana.eu";
-			// var propertyEndpoint = "http://dbpedia.org/sparql";
+			var resourceEndpoint = "http://sparql.europeana.eu";
+			var propertyEndpoint = "http://dbpedia.org/sparql";
 
-			// var resourceGraph = "http://data.europeana.eu/"
-			// var propertyGraph = "http://dbpedia.org"
+			var resourceGraph = "http://data.europeana.eu/"
+			var propertyGraph = "http://dbpedia.org"
 
-			// var baseURI = "http://hamburg-beer.xml/"
+			var baseURI = "http://hamburg-beer.xml/"
 
 			// //get about resource through title name
-			// var query = defaultQuery("SELECT ?s WHERE {?s dc:title  \""+artifact.title+"\"@de}", resourceGraph);
+			var query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s dc:title  ?title FILTER(?title=\""+artifact.title+"\"^^xsd:string)}";
+			
+			//Initialize about url with own url (use if no resource could be found)
+			var aboutRes = baseURI + artifact.title.replace(/\W/g, '');
+			var aboutIsRes = false;
+	
+			var client = new SparqlClient(resourceEndpoint);
+			client.query(query)
+		 		.execute(function(error, results){
+  				if(results!=null){
+					console.log("Could find about resource");
+					aboutRes = results.s;
+					aboutIsRes = true;
+				}
+			});
+	
 
-			// console.log(query.queryStr);
-			// query.select(resourceEndpoint);
+			//Get creator by 
+			var artistsArr={};
 
-			// //Wait for results 
-			// console.log("D1");
-			// while(!query.finished) {await sleep(100);}
-			// console.log("D2");
-			// //Initialize about url with own url (use if no resource could be found)
-			// var aboutRes = baseURI + title.replace(/\W/g, '');
-			// var aboutIsRes = false;
-			// if(query.results !=null && query.results.hasNext()){
-			// 	query.results.next();
-			// 	aboutRes = query.results.getFromIndex(0);
-			// 	//Set about Res could be found
-			// 	aboutIsRes=true;
-			// }
+			for(var key in artifact.actors)			{
+				if (artifact.actors.hasOwnProperty(key)) {
+				var artist = artifact.actors[key];
+				var aboutTriple="";
+				console.log(artifact.actors);
+				console.log(artist);
+				artistsArr.name = artist.name;
+			 	if(aboutIsRes){
+			 		//use about Res to get creator (more confident than just by name"
+			 		aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
+			 	}
+			 	query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}";
+			 	
+				artist.res = baseURI + artist.name.replace(/\W/g, '');
+				client = new SparqlClient(resourceEndpoint);
+				client.query(query)
+		 			.execute(function(error, results){
+  						if(results!=null){
+							console.log("Artist resource found");
+							artist.res = results.s;
+						}
+					});
+				}
+			}
 
-			// //Get creator by 
-			// var artistsArr={};
-
-			// for(var artist of artifact.actors.actor)
-			// {
-			//     var aboutTriple="";
-			// 	artistsArr.name = artist.name;
-			// 	if(aboutIsRes){
-			// 		//use about Res to get creator (more confident than just by name"
-			// 		aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
-			// 	}
-			// 	query = defaultQuery("SELECT ?s WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}", resourceGraph);
-			// 	query.select(resourceEndpoint);
-			// 	//Wait for results 
-			// 	console.log("D3");
-			// 	while(!query.finished) {await sleep(100);}
-			// 	console.log("D4");
-			// 	if(query.results !=null && query.results.hasNext()){
-			// 		query.results.next();	
-			// 		// artist has a resource
-			// 		artistsArr.res = query.results.getFromIndex(0);
-			// 	}
-			// }
-
-			//setItems(aboutRes, title, artists, displayDate, earliestDate, latestDate, description,);
 
 			return {
 				artifact: artifact,
-				about: {},
+				about: {about: aboutRes},
 			};
 		}
 	},
