@@ -96,7 +96,19 @@ module.exports = {
 					'^/api': ''
 				},
 				logLevel: 'debug'
-			}
+			},'/europeana': {
+				target: 'http://sparql.europeana.eu',
+				pathRewrite: {
+					'^/europeana': ''
+				},
+				logLevel: 'debug'
+			},'/dbpedia': {
+				target: 'http://dbpedia.org/sparql',
+				pathRewrite: {
+					'^/dbpedia': ''
+				},
+				logLevel: 'debug'
+			},
 		}
 	},
 	devtool: '#eval-source-map'
