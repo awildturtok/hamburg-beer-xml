@@ -1,6 +1,4 @@
 function parseJsonResponse(jsonStr) {
-
-    var obj = JSON.parse(jsonStr);
     //create Object which contains table and mapping to variables 
     var results = {
         table: [],
@@ -35,27 +33,31 @@ function parseJsonResponse(jsonStr) {
         }
 
     }
+
+    var obj = JSON.parse(jsonStr);
+
     //map results and vars to results
     results.vars = obj.head.vars;
 
     var tmp = obj.results.bindings;
 
-    results.tableByVars = obj.results.bindings
-        .map(row => results.vars.reduce((out, name) => {
-            out[name] = row[name].value;
-            return out;
-        }, {}));
+    // results.tableByVars = obj.results.bindings
+    //     .map(row => results.vars.reduce((out, name) => {
+    //         out[name] = row[name].value;
+    //         return out;
+    //     }, {}));
 
-    console.log(results.tableByVars);
+    // console.log(results.tableByVars);
 
 
-    for (j = 0; j < tmp.length; j++) {
+    for (var j = 0; j < tmp.length; j++) {
         var row = [];
-        for (i = 0; i < results.vars.length; i++) {
+        for (var i = 0; i < results.vars.length; i++) {
             row.push(tmp[j][results.vars[i]].value);
         }
         results.table.push(row);
     }
+
     return results;
 }
 
@@ -106,17 +108,22 @@ export default {
                 url += "&format=json";
                 return url;
             },
-            select: function (service) {
+            select: function (service, callback = false) {
                 //add prefixes to query
                 var newQueryStr = this.addPrefixes();
                 //create URL
                 var url = this.createURL(service, newQueryStr);
                 var ret;
+                var cb = callback;
                 // todo daraus kannst du auch ein Promise machen, was du raus gibst.
-                httpGetAsync(url, this, function (response, query) {
+                httpGetAsync(url, this, (response, query) => {
                     var jsonResponse = response;
                     query.results = parseJsonResponse(jsonResponse);
+
                     query.finished = true;
+
+                    if (!!cb)
+                        cb(query.results);
                 });
 
             },
@@ -124,7 +131,7 @@ export default {
                 var newQueryStr = this.addPrefixes();
                 //create URL
                 var url = this.createURL(service, newQueryStr);
-                httpGetAsync(url, this, function (response, query) {
+                httpGetAsync(url, this, (response, query) => {
                     var jsonResponse = response;
                     var obj = JSON.parse(jsonResponse);
                     query.results = obj.boolean;
