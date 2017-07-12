@@ -1,6 +1,6 @@
 <template>
 	<div id="detail" class="card" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
-		<div v-bind:about="about.about">
+		<div v-bind:about="about.about" v-bind:typeof="about.t">
 			<h1 class="card-header" property="dc:title">{{artifact.title}}
 				<span :v-if="artifact.type && artifact.type.length > 0">({{artifact.type}})</span>
 			</h1>
@@ -79,6 +79,14 @@ var parseXmlAsync = (text, options = { async: true }) =>
 					resolve(value);
 			})
 	)
+
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+var typeRes=null;
+var artist=null;
+var aboutRes=null;
 
 
 export default {
@@ -167,12 +175,12 @@ export default {
 			// var propertyEndpoint = "http://dbpedia.org/sparql";
 
 			var resourceGraph = "http://data.europeana.eu/"
-			var propertyGraph = "http://dbpedia.org"
+			var propertyGraph = "http://dbpedia.org/resource/classes#"
 
 			var baseURI = "http://hamburg-beer.xml/"
 
 			// //get about resource through title name
-			var query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s dc:title  ?title FILTER(?title=\""+artifact.title+"\"^^xsd:string)}";
+			var query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s dc:title  ?title FILTER(?title=\""+artifact.title+"\"^^xsd:string)}  LIMIT 1";
 			
 			//Initialize about url with own url (use if no resource could be found)
 			var aboutRes = baseURI + artifact.title.replace(/\W/g, '');
@@ -182,9 +190,11 @@ export default {
 			client.query(query)
 		 		.execute(function(error, results){
   				if(results!=null){
-					console.log("Could find about resource");
-					aboutRes = results.s;
-					aboutIsRes = true;
+					if(results.results.bindings.length!=0){
+						console.log("Could find about resource");
+						aboutRes = results.results.bindings[0];
+						aboutIsRes = true;
+					}
 				}
 			});
 	
@@ -203,28 +213,46 @@ export default {
 			 		//use about Res to get creator (more confident than just by name"
 			 		aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
 			 	}
-			 	query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"}";
+			 	query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"} LIMIT 1";
 			 	
 				artist.res = baseURI + artist.name.replace(/\W/g, '');
 				client = new SparqlClient(resourceEndpoint);
 				client.query(query)
 		 			.execute(function(error, results){
   						if(results!=null){
-							console.log("Artist resource found");
-							artist.res = results.s;
+							if(results.results.bindings.length!=0){
+								console.log("Artist resource found");
+								artist.res = results.results.bindings[0];
+							}
 						}
 					});
 				}
 			}
+			console.log("D1");
+			typeRes = baseURI + artifact.type;
+			client = new SparqlClient(propertyEndpoint);
+			query = "SELECT ?s FROM <"+propertyGraph+"> WHERE {?s rdfs:label \""+artifact.type+"\"@de; rdf:type owl:Class} LIMIT 1";
+			console.log(typeRes);
+			client.query(query)
+				.execute(function(error, results, typeRes){		
+  					if(results!=null){
 
+						if(results.results.bindings.length!=0){
+							console.log(results.results.bindings[0].s.value);
+							typeRes=results.results.bindings[0].s.value;
+						}
+
+					}	
+				});
+			
 
 			console.log("done!?");
 
 			return {
 				artifact: artifact,
-				about: {about: aboutRes},
+				about: {about: aboutRes, t: typeRes}
 			};
-		}
+		},
 	},
 }
 
