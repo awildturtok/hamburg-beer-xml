@@ -12,8 +12,8 @@ Vue.use(VueRouter);
 Vue.use(VueResource);
 Vue.use(VueLocalStorage)
 
-Vue.url.options.root = '/';
-// Vue.url.options.root = '/api/'; // enable this in dev mode and vice versa.
+// Vue.url.options.root = '/';
+Vue.url.options.root = '/api/'; // enable this in dev mode and vice versa.
 
 import App from './App.vue';
 import TimeLine from './TimeLine.vue';
@@ -22,7 +22,7 @@ import DetailView from './DetailView2.vue';
 
 
 const router = new VueRouter({
-    base: '/static/',
+    base: '/',
     mode: 'history',
     routes: [{
             path: '/',

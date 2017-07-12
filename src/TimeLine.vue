@@ -39,7 +39,7 @@ export default {
     },
     methods: {
         fetchRaw(query) {
-            return this.$http.get("/rest/beer/", {
+            return this.$http.get("rest/beer/", {
                 params: {
                     query: query
                 },
