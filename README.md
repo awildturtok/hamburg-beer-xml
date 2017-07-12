@@ -2,8 +2,8 @@
 
 ## Installation
 
-This project relies on [yarn](https://yarnpkg.com/lang/en/docs/install/) to manage its dependencies, therefore you should install it before trying to run anything.  
-After setting up Yarn, enter the project directory, and execute the command `yarn install`, this will gather all dependencies and install them in the folder `node_modules`.
-To render the webpage you have to execute `yarn dev`, which will spin up a webpack server, which will assemble your projects vue files and compile them into js/html/css files, which will be served through hot code reloading. It should also open your default browser pointing to the locally hosted webpage.
+This project relies on [yarn](https://yarnpkg.com/lang/en/docs/install/) to manage its dependencies, therefore you should install it before trying to run anything.
+
+To view the webpage you have to execute some simple steps inside the project folder. First, run ```yarn build``` to compile the webpage and all its dependencies. Then, run the ```run_docker_container``` script to build the docker image and start the container. Finally, you have to copy everything from ```dist``` into the ```server_content``` directory. You can then visit the webpage at [http://localhost:8984/static](http://localhost:8984/static). To do so you can run ```cp -r ./dist* server_content/```.
 
 This project uses Vue as templating engine, which is really lightweight, you should check out their [docs](https://vuejs.org/v2/guide).
