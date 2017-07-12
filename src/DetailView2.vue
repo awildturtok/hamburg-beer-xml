@@ -1,6 +1,6 @@
 <template>
 	<div id="detail" class="card" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dbp="http://dbpedia.org/property/">
-		<div v-bind:about="about.about" v-bind:typeof="about.t">
+		<div v-bind:about="about.aboutRes" v-bind:typeof="about.typeRes">
 			<h1 class="card-header" property="dc:title">{{artifact.title}}
 				<span :v-if="artifact.type && artifact.type.length > 0">({{artifact.type}})</span>
 			</h1>
@@ -84,9 +84,6 @@ var parseXmlAsync = (text, options = { async: true }) =>
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
-var typeRes=null;
-var artist=null;
-var aboutRes=null;
 
 
 export default {
@@ -164,10 +161,10 @@ export default {
 
 			// Create SPARQL services for europeana and dbpedia
 			// var resourceEndpoint = "http://sparql.europeana.eu";
-			// var propertyEndpoint = "http://dbpedia.org/sparql";
+			var propertyEndpoint = "http://dbpedia.org/sparql";
 
 			var resourceEndpoint = "/europeana";
-			var propertyEndpoint = "/dbpedia";
+			//var propertyEndpoint = "/dbpedia";
 
 
 			// // Create SPARQL services for europeana and dbpedia
@@ -185,19 +182,20 @@ export default {
 			//Initialize about url with own url (use if no resource could be found)
 			var aboutRes = baseURI + artifact.title.replace(/\W/g, '');
 			var aboutIsRes = false;
-	
+			var obj = {aboutIsRes: false, aboutRes: aboutRes};
 			var client = new SparqlClient(resourceEndpoint);
 			client.query(query)
 		 		.execute(function(error, results){
   				if(results!=null){
 					if(results.results.bindings.length!=0){
 						console.log("Could find about resource");
-						aboutRes = results.results.bindings[0];
-						aboutIsRes = true;
+						obj.aboutRes = results.results.bindings[0];
+						obj.aboutIsRes = true;
 					}
 				}
 			});
-	
+			
+			
 
 			//Get creator by 
 			var artistsArr={};
@@ -209,9 +207,9 @@ export default {
 				console.log(artifact.actors);
 				console.log(artist);
 				artistsArr.name = artist.name;
-			 	if(aboutIsRes){
+			 	if(obj.aboutIsRes){
 			 		//use about Res to get creator (more confident than just by name"
-			 		aboutTriple = "<"+aboutRes+"> dc:creator ?s. ";
+			 		aboutTriple = "<"+obj.aboutRes+"> dc:creator ?s. ";
 			 	}
 			 	query = "SELECT ?s FROM <"+resourceGraph+"> WHERE {?s foaf:name  \""+artist.name+"\"@en. "+aboutTriple+"} LIMIT 1";
 			 	
@@ -228,29 +226,25 @@ export default {
 					});
 				}
 			}
-			console.log("D1");
-			typeRes = baseURI + artifact.type;
+
+			obj.typeRes = baseURI + artifact.type;
 			client = new SparqlClient(propertyEndpoint);
 			query = "SELECT ?s FROM <"+propertyGraph+"> WHERE {?s rdfs:label \""+artifact.type+"\"@de; rdf:type owl:Class} LIMIT 1";
-			console.log(typeRes);
 			client.query(query)
-				.execute(function(error, results, typeRes){		
+				.execute(function(error, results){		
   					if(results!=null){
 
 						if(results.results.bindings.length!=0){
-							console.log(results.results.bindings[0].s.value);
-							typeRes=results.results.bindings[0].s.value;
+							obj.typeRes=results.results.bindings[0].s.value;						
 						}
 
 					}	
 				});
 			
 
-			console.log("done!?");
-
 			return {
 				artifact: artifact,
-				about: {about: aboutRes, t: typeRes}
+				about: obj
 			};
 		},
 	},
