@@ -17,6 +17,7 @@
     "ramda": "^0.24.1",
     "request": "^2.81.0",
     "request-promise-native": "^1.0.4",
+    "sparql-client": "^0.2.0",
     "vue": "^2.3.4",
     "vue-bootstrap-pagination": "^2.10.2",
     "vue-localstorage": "^0.2.0",
